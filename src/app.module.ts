@@ -11,6 +11,8 @@ import { ConversationModule } from './conversation/conversation.module';
 import { CollectModule } from './collect/collect.module';
 import { BrowseModule } from './browse/browse.module';
 import { FollowModule } from './follow/follow.module';
+import { TagModule } from './tag/tag.module';
+import { PostTagModule } from './post_tag/post_tag.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { FollowModule } from './follow/follow.module';
     CollectModule,
     BrowseModule,
     FollowModule,
+    TagModule,
+    PostTagModule,
   ],
 })
 export class AppModule {}

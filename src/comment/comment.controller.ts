@@ -17,6 +17,12 @@ export class CommentController {
     return this.commentService.findAll();
   }
 
+  @Get('tree/:postId')
+  getCommentTree(@Param('postId') postId: number) {
+    console.log('123');
+    return this.commentService.getCommentTreeByPostId(Number(postId));
+  }
+  
   @Get(':type/:id')
   findByTarget(
     @Param('type') type: 'Post' | 'Comment',
@@ -29,4 +35,7 @@ export class CommentController {
   remove(@Param('id') id: number) {
     return this.commentService.remove(+id);
   }
+
+
+
 }

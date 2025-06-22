@@ -35,4 +35,6 @@ export class Comment {
 
   @Column({type:'int',default:0})
   like_count : number;
+
+  children?:Comment[];
 }
