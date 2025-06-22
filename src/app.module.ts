@@ -1,0 +1,34 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserModule } from './user/user.module';
+import { PostModule } from './post/post.module';
+import { MediaModule } from './media/media.module';
+import { ServeStaticModule} from '@nestjs/serve-static'
+import { join } from 'path';
+import { CommentModule } from './comment/comment.module';
+import { LikeModule } from './like/like.module';
+
+@Module({
+  imports: [
+    TypeOrmModule.forRoot({
+      type: 'mysql',
+      host: '47.117.0.254',
+      port: 3306,
+      username: 'harmonyUser',
+      password: 'abc123456',
+      database: 'timesnap',
+      synchronize: false,
+      autoLoadEntities: true,
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname,'..','uploads'),
+      serveRoot:'/uploads',
+    }),
+    UserModule,
+    PostModule,
+    MediaModule,
+    CommentModule,
+    LikeModule,
+  ],
+})
+export class AppModule {}
