@@ -24,7 +24,4 @@ export class LikeService {
     return this.likeRepo.find();
   }
 
-  async findByUserAndTarget(user_id: number, target_type: 'Post' | 'Comment', target_id: number) {
-    return this.likeRepo.findOneBy({ user_id, target_type, target_id });
-  }
 }
