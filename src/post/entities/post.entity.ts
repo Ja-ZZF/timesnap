@@ -25,4 +25,10 @@ export class Post {
 
   @Column({type:'int',default:0})
   like_count : number;
+
+  @Column({type:'int',default:0})
+  collect_count : number;
+
+  @Column({type:'int',default:0})
+  browse_count : number;
 }

@@ -32,4 +32,7 @@ export class Comment {
 
   @CreateDateColumn({ type: 'datetime' })
   comment_time: Date;
+
+  @Column({type:'int',default:0})
+  like_count : number;
 }

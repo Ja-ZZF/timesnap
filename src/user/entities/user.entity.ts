@@ -25,4 +25,10 @@ export class User {
 
   @CreateDateColumn({ type: 'datetime' })
   create_time: Date;
+
+  @Column({type:'int',default:0})
+  followed_count : number;
+
+  @Column({type:'int',default:0})
+  follower_count : number;
 }

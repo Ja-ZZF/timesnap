@@ -8,6 +8,9 @@ import { join } from 'path';
 import { CommentModule } from './comment/comment.module';
 import { LikeModule } from './like/like.module';
 import { ConversationModule } from './conversation/conversation.module';
+import { CollectModule } from './collect/collect.module';
+import { BrowseModule } from './browse/browse.module';
+import { FollowModule } from './follow/follow.module';
 
 @Module({
   imports: [
@@ -31,6 +34,9 @@ import { ConversationModule } from './conversation/conversation.module';
     CommentModule,
     LikeModule,
     ConversationModule,
+    CollectModule,
+    BrowseModule,
+    FollowModule,
   ],
 })
 export class AppModule {}
