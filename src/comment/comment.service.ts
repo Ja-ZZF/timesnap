@@ -88,11 +88,36 @@ async getCommentsWithUserInfoAndMediasByPostId(postId: number): Promise<any[]> {
   });
 
   // 组装结果
-  return allComments.map(comment => ({
+  // 组装 enriched 评论列表（加上 user 和 medias）
+  const enrichedComments = allComments.map(comment => ({
     ...comment,
     user: userMap.get(comment.user_id) || null,
     medias: mediaMap.get(comment.comment_id) || [],
+    children: [] // 🌳 预留子评论
   }));
+
+  // 构建树结构
+  const commentMap = new Map<number, any>();
+  enrichedComments.forEach(comment => commentMap.set(comment.comment_id, comment));
+
+  const rootComments: any[] = [];
+
+  enrichedComments.forEach(comment => {
+    if (comment.parent_comment_id) {
+      const parent = commentMap.get(comment.parent_comment_id);
+      if (parent) {
+        parent.children.push(comment);
+      } else {
+        // 万一 parent_comment_id 存在但查不到，兜底为根评论
+        rootComments.push(comment);
+      }
+    } else {
+      rootComments.push(comment);
+    }
+  });
+
+  return rootComments;
+
 }
 
 
