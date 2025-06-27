@@ -13,10 +13,10 @@ export class CommentController {
     return this.commentService.findAll();
   }
 
-  @Get(':postId/tree')
-  async getCommentsTree(@Param('postId', ParseIntPipe) postId: number) {
-    return this.commentService.getCommentsTreeByPostId(postId);
-  }
+  // @Get(':postId/tree')
+  // async getCommentsTree(@Param('postId', ParseIntPipe) postId: number) {
+  //   return this.commentService.getCommentsTreeByPostId(postId);
+  // }
 
   @Post()
   async createComment(@Body() createCommentDto: CreateCommentDto): Promise<Comment> {

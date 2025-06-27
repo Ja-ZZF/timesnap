@@ -33,6 +33,9 @@ export class Comment {
   @CreateDateColumn({ type: 'datetime', name: 'comment_time' })
   comment_time: Date;
 
+  @Column({type:'int',default:0})
+  like_count : number;
+
   // 关联：评论所属用户
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })

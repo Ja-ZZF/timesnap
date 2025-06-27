@@ -1,10 +1,12 @@
 // src/post/post.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, ManyToMany, Repository } from 'typeorm';
+import { DataSource, Long, ManyToMany, Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { NotFoundError } from 'rxjs';
 import { CommentService } from 'src/comment/comment.service';
+import { UserService } from 'src/user/user.service';
+import { MediaService } from 'src/media/media.service';
 
 @Injectable()
 export class PostService {
@@ -13,6 +15,8 @@ export class PostService {
     private postRepo: Repository<Post>,
     private dataSource : DataSource,
     private readonly commentService: CommentService,
+    private readonly userService: UserService,
+    private readonly mediaService : MediaService,
   ) {}
 
   async findAll() : Promise<Post[]>{
@@ -69,20 +73,27 @@ export class PostService {
   }
 
   async getPostDetail(postId : number, userId : number):Promise<any>{
-    //查询笔记信息
-    const post = await this.dataSource.query(`SELECT * FROM post WHERE post_id = ?`,[postId]);
-    if(post.length == 0){
+    // 查询笔记信息
+    const postResult = await this.dataSource.query(
+      `SELECT * FROM post WHERE post_id = ?`,
+      [postId],
+    );
+    if (postResult.length === 0) {
       throw new NotFoundException('Post Not Found');
     }
+    const post = postResult[0]; // 取出查询结果的第一条
+
+    console.log(post);
+
+    //查询笔记用户基本信息
+    const author = await this.userService.getBasicUserInfo(userId);
 
     //查询图片信息
-    const images = await this.dataSource.query(`
-      SELECT media_id,url FROM media
-      WHERE owner_type = 'Post' AND owner_id = ?  
-    `,[postId]);
+    const medias = await this.mediaService.findByOwner("Post",postId);
+    
     
     //查询评论树
-    const commentsTree = await this.commentService.getCommentsTreeByPostId(postId);
+    const commentsTree = await this.commentService.getCommentsWithUserInfoAndMediasByPostId(postId);
 
     //查询是否点赞
     const likeResult = await this.dataSource.query(`
@@ -95,13 +106,11 @@ export class PostService {
       SELECT 1 FROM \`collect\`
       WHERE post_id = ? AND user_id = ? LIMIT 1
     `, [postId, userId]);
-    const isLiked = likeResult.length > 0;
-    const isCollected = collectResult.length > 0;
 
     //查询 tag
     const tags = await this.dataSource.query(
       `
-      SELECT t.name
+      SELECT t.tag_id,t.name
       FROM tag t
       INNER JOIN post_tag pt ON t.tag_id = pt.tag_id
       WHERE pt.post_id = ?
@@ -109,13 +118,28 @@ export class PostService {
       [postId],
     );
 
-    return{
-      ...post[0],
-      isLiked,
-      isCollected,
+    return {
+      post: {
+        post_id: Number(post.post_id),
+        publish_time: post.publish_time,
+        title: post.title,
+        content: post.content,
+      },
+      user: author, // ✅ 加入 user 模块
+      permission: {
+        view_permission: post.view_permission,
+        comment_permission: post.comment_permission,
+      },
+      stats: {
+        like_count: post.like_count,
+        collect_count: post.collect_count,
+        browse_count: post.browse_count,
+        isLiked: likeResult.length > 0,
+        isCollected: collectResult.length > 0,
+      },
+      medias,
       tags,
-      images,
-      comments:commentsTree
+      comments: commentsTree,
     };
   }
 

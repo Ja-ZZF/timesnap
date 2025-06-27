@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Media } from './entities/media.entity';
 
 @Injectable()
@@ -14,9 +14,6 @@ export class MediaService {
     return this.mediaRepo.find();
   }
 
-  findByOwner(ownerType: 'Post' | 'Comment' | 'Draft', ownerId: number): Promise<Media[]> {
-    return this.mediaRepo.find({ where: { owner_type: ownerType, owner_id: ownerId } });
-  }
 
   create(media: Partial<Media>): Promise<Media> {
     return this.mediaRepo.save(media);
@@ -32,5 +29,18 @@ export class MediaService {
     });
     return medias.map(m=>m.url);
   }
+
+  async findByOwner(ownerType: 'Post' | 'Comment' | 'Draft', ownerId: number): Promise<{ media_id: number; url: string }[]> {
+    return this.mediaRepo.find({
+      select: ['media_id', 'url'],
+      where: {
+        owner_type: ownerType,
+        owner_id: ownerId,
+      },
+    });
+  }
+
+
+
   
 }

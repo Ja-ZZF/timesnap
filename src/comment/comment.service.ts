@@ -6,6 +6,9 @@ import { Comment } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { Post } from 'src/post/entities/post.entity';
 import { User } from 'src/user/entities/user.entity';
+import { UserBasicInfo } from 'src/user/dto/user-basic-info.dto';
+import { UserService } from 'src/user/user.service';
+import { MediaService } from 'src/media/media.service';
 
 @Injectable()
 export class CommentService {
@@ -17,7 +20,10 @@ export class CommentService {
     private readonly postRepo: Repository<Post>,
 
     @InjectRepository(User)
-    private readonly userRepo: Repository<User>
+    private readonly userRepo: Repository<User>,
+
+    private readonly userService: UserService,
+    private readonly mediaService : MediaService,
   ) {}
 
 
@@ -54,23 +60,58 @@ export class CommentService {
     return this.commentRepo.save(comment);
   }
 
-  async getCommentsTreeByPostId(postId : number): Promise<CommentTree[]>{
-    const allComments = await this.commentRepo.find({
-      where:{post_id : postId},
-      order:{comment_time:'ASC'},
-    });
+async getCommentsWithUserInfoAndMediasByPostId(postId: number): Promise<any[]> {
+  // 查询所有评论
+  const allComments = await this.commentRepo.find({
+    where: { post_id: postId },
+    order: { comment_time: 'ASC' },
+  });
 
-    return this.buildTree(allComments);
-  }
+  const userIds = Array.from(new Set(allComments.map(c => c.user_id)));
+  const users = await this.userService.getBasicUserInfoByIds(userIds);
+  const userMap = new Map<number, any>();
+  users.forEach(user => userMap.set(user.user_id, user));
 
-    private buildTree(comments: Comment[], parentId: number | null = null): CommentTree[] {
-    return comments
-      .filter(c => c.parent_comment_id === parentId)
-      .map(c => ({
-        ...c,
-        children: this.buildTree(comments, c.comment_id),
-      }));
-    }
+  // 先拿到所有评论id
+  const commentIds = allComments.map(c => c.comment_id);
+
+  // 用 Promise.all 并行批量获取每条评论的media
+  // 注意这里是多条评论，每条调用一次mediaService，开销大时可优化
+  const mediasArr = await Promise.all(
+    commentIds.map(id => this.mediaService.findByOwner('Comment', id))
+  );
+
+  // mediasArr 和 commentIds 对应，把 medias映射到对应评论id
+  const mediaMap = new Map<number, any[]>();
+  commentIds.forEach((id, index) => {
+    mediaMap.set(id, mediasArr[index]);
+  });
+
+  // 组装结果
+  return allComments.map(comment => ({
+    ...comment,
+    user: userMap.get(comment.user_id) || null,
+    medias: mediaMap.get(comment.comment_id) || [],
+  }));
+}
+
+
+
+
+// private buildTreeWithUser(
+//   comments: Comment[],
+//   userMap: Map<number, UserBasicInfo>,
+//   parentId: number | null = null,
+// ): CommentTree[] {
+//   return comments
+//     .filter(c => c.parent_comment_id === parentId)
+//     .map(c => ({
+//       ...c,
+//       user: userMap.get(c.user_id) ?? null,
+//       children: this.buildTreeWithUser(comments, userMap, c.comment_id),
+//     }));
+// }
+
 
 }
 
