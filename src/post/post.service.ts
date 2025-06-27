@@ -134,6 +134,7 @@ export class PostService {
         like_count: post.like_count,
         collect_count: post.collect_count,
         browse_count: post.browse_count,
+        comment_count:post.comment_count,
         isLiked: likeResult.length > 0,
         isCollected: collectResult.length > 0,
       },

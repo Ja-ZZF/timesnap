@@ -32,6 +32,10 @@ export class Post {
   @Column({type:'int',default:0})
   browse_count : number;
 
+  @Column({type:'int',default:0})
+  comment_count : number;
+
+
   @Column({ type: 'enum', enum: ['Public', 'FansOnly', 'MutualOnly', 'Private'], default: 'Public' })
   view_permission: 'Public' | 'FansOnly' | 'MutualOnly' | 'Private';
 
