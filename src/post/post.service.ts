@@ -68,21 +68,52 @@ export class PostService {
     await this.postRepo.delete(id);
   }
 
-  async getPostDetail(postId : number):Promise<any>{
+  async getPostDetail(postId : number, userId : number):Promise<any>{
+    //查询笔记信息
     const post = await this.dataSource.query(`SELECT * FROM post WHERE post_id = ?`,[postId]);
     if(post.length == 0){
       throw new NotFoundException('Post Not Found');
     }
 
+    //查询图片信息
     const images = await this.dataSource.query(`
       SELECT media_id,url FROM media
       WHERE owner_type = 'Post' AND owner_id = ?  
     `,[postId]);
-
+    
+    //查询评论树
     const commentsTree = await this.commentService.getCommentsTreeByPostId(postId);
+
+    //查询是否点赞
+    const likeResult = await this.dataSource.query(`
+      SELECT 1 FROM \`like\`
+      WHERE target_type = 'Post' AND target_id = ? AND user_id = ? LIMIT 1
+    `, [postId, userId]);
+
+    //查询是否收藏
+    const collectResult = await this.dataSource.query(`
+      SELECT 1 FROM \`collect\`
+      WHERE post_id = ? AND user_id = ? LIMIT 1
+    `, [postId, userId]);
+    const isLiked = likeResult.length > 0;
+    const isCollected = collectResult.length > 0;
+
+    //查询 tag
+    const tags = await this.dataSource.query(
+      `
+      SELECT t.name
+      FROM tag t
+      INNER JOIN post_tag pt ON t.tag_id = pt.tag_id
+      WHERE pt.post_id = ?
+      `,
+      [postId],
+    );
 
     return{
       ...post[0],
+      isLiked,
+      isCollected,
+      tags,
       images,
       comments:commentsTree
     };

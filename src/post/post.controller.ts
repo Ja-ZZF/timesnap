@@ -1,5 +1,5 @@
 // src/post/post.controller.ts
-import { Controller, Get, Post as HttpPost, Put, Delete, Param, Body, NotFoundException, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post as HttpPost, Put, Delete, Param, Body, NotFoundException, ParseIntPipe, Query } from '@nestjs/common';
 import { PostService } from './post.service';
 import { Post as PostEntity } from './entities/post.entity';
 
@@ -21,10 +21,14 @@ export class PostController {
     return post;
   }
   
-  @Get(':id/detail')
-  async getPostDetail(@Param('id') postId:number){
-    return this.postService.getPostDetail(postId);
+  @Get(':postId/detail')
+  async getPostDetail(
+    @Param('postId', ParseIntPipe) postId: number,
+    @Query('userId', ParseIntPipe) userId: number
+  ) {
+    return this.postService.getPostDetail(postId, userId);
   }
+
 
   @Get('user/:userId')
   findByUserId(@Param('userId',ParseIntPipe) userId : number){

@@ -1,98 +1,128 @@
+
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <a href="http://nestjs.com/" target="blank">
+    <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" />
+  </a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+<p align="center">
+  <b>TimeSnap（拾光）</b><br>
+  基于 HarmonyOS + NestJS 的多端生活分享社交平台
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+<p align="center">
+  <a href="https://www.npmjs.com/package/@nestjs/core" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+  <a href="https://www.npmjs.com/package/@nestjs/core" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="License" /></a>
+  <a href="https://www.mysql.com/" target="_blank"><img src="https://img.shields.io/badge/database-MySQL-blue.svg" alt="MySQL" /></a>
+  <a href="https://redis.io/" target="_blank"><img src="https://img.shields.io/badge/cache-Redis-red.svg" alt="Redis" /></a>
+  <a href="https://developer.harmonyos.com" target="_blank"><img src="https://img.shields.io/badge/front-end-ArkUI-brightgreen.svg" alt="ArkUI" /></a>
+</p>
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## 📌 Description
+
+**TimeSnap（拾光）** 是一个多终端协同的生活分享社交平台，用户可以发布图文、视频或一句话心情内容，记录生活点滴并与好友互动。  
+应用充分融合了鸿蒙分布式特性，实现了手机、平板、智慧屏的多端接续体验。
+
+- 支持：图文/视频发布、智能推荐、私信聊天、点赞收藏评论、跨设备同步等
+- 后端采用 NestJS，数据库为 MySQL，Redis 用于缓存与异步任务
+- 前端使用 ArkTS 编写，基于 HarmonyOS 原生开发框架 ArkUI
+
+---
+
+## 📁 Project structure
+
+```
+timesnap/
+├── backend/        NestJS 后端服务
+│   ├── src/        控制器、服务、模块等逻辑
+│   ├── config/     配置文件与环境变量
+│   └── database/   MySQL 表结构与 Redis 脚本
+├── frontend/       ArkTS 前端工程（HarmonyOS）
+│   └── entry/      页面入口与视图组件
+├── docs/           项目文档
+└── README.md
+```
+
+---
+
+## 🚀 Project setup
 
 ```bash
+# 克隆仓库
+$ git clone https://github.com/Ja-ZZF/timesnap.git
+$ cd timesnap
+```
+
+### 后端安装与启动
+
+```bash
+# 进入后端目录
+$ cd ./timesnap
+
+# 安装依赖
 $ npm install
-```
 
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
+# 运行开发环境
 $ npm run start:dev
-
-# production mode
-$ npm run start:prod
 ```
 
-## Run tests
+### 环境变量配置
+
+请在 `backend/` 根目录下创建 `.env` 文件，参考以下内容：
+
+```env
+PORT=3000
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=yourpassword
+MYSQL_DATABASE=timesnap
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+---
+
+## 📱 HarmonyOS Frontend (ArkTS + ArkUI)
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# 使用 DevEco Studio 打开 frontend 目录
+# 连接模拟器或鸿蒙真机进行预览和调试
 ```
 
-## Deployment
+- 支持鸿蒙手机、平板、手表与智慧屏
+- 实现状态同步、草稿自动存储、分布式接续创作
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+---
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 🧠 功能概览
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+- 用户注册 / 登录（手机号验证码、微信、华为账号）
+- 发布图文、视频与拾光日记（简洁表达）
+- 评论、点赞、转发、收藏、私信聊天等社交互动
+- 基于兴趣标签、互动记录的个性化内容推荐
+- 举报机制、内容审核、用户信用体系
+- 多设备协作编辑与同步、原子服务卡片接入
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## 🛠 Dev dependencies
 
-Check out a few resources that may come in handy when working with NestJS:
+- Node.js >= 18.x
+- Redis >= 6
+- MySQL >= 8.0
+- DevEco Studio（推荐最新版）
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+---
 
-## Support
+## 📝 License
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+[MIT](LICENSE)
 
-## Stay in touch
+---
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+由 **TimeSnap 开发团队** 荣誉出品 🎉
 
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
