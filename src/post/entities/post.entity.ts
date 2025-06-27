@@ -4,10 +4,10 @@ import { User } from '../../user/entities/user.entity';
 
 @Entity({ name: 'post' })
 export class Post {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({type:'bigint'})
   post_id: number;
 
-  @Column()
+  @Column({type : 'bigint'})
   user_id: number;
 
   @ManyToOne(() => User)
@@ -17,10 +17,10 @@ export class Post {
   @CreateDateColumn({ type: 'datetime' })
   publish_time: Date;
 
-  @Column({ length: 200 })
+  @Column({type:'varchar',length: 200 })
   title: string;
 
-  @Column('text')
+  @Column({type:'text'})
   content: string;
 
   @Column({type:'int',default:0})
@@ -31,4 +31,11 @@ export class Post {
 
   @Column({type:'int',default:0})
   browse_count : number;
+
+  @Column({ type: 'enum', enum: ['Public', 'FansOnly', 'MutualOnly', 'Private'], default: 'Public' })
+  view_permission: 'Public' | 'FansOnly' | 'MutualOnly' | 'Private';
+
+  @Column({ type: 'enum', enum: ['Public', 'FansOnly', 'MutualOnly', 'Closed'], default: 'Public' })
+  comment_permission: 'Public' | 'FansOnly' | 'MutualOnly' | 'Closed';
+
 }

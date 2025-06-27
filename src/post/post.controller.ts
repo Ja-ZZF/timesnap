@@ -20,6 +20,11 @@ export class PostController {
     }
     return post;
   }
+  
+  @Get(':id/detail')
+  async getPostDetail(@Param('id') postId:number){
+    return this.postService.getPostDetail(postId);
+  }
 
   @Get('user/:userId')
   findByUserId(@Param('userId',ParseIntPipe) userId : number){

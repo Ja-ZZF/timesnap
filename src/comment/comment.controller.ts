@@ -1,40 +1,28 @@
 // src/comment/comment.controller.ts
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { Comment } from './entities/comment.entity';
+import { CreateCommentDto } from './dto/create-comment.dto';
 
 @Controller('comments')
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
-  @Post()
-  create(@Body() comment: Partial<Comment>) {
-    return this.commentService.create(comment);
-  }
-
   @Get()
-  findAll(): Promise<Comment[]> {
+  async findAll():Promise<Comment[]>{
     return this.commentService.findAll();
   }
 
-  @Get('tree/:postId')
-  getCommentTree(@Param('postId') postId: number) {
-    console.log('123');
-    return this.commentService.getCommentTreeByPostId(Number(postId));
-  }
-  
-  @Get(':type/:id')
-  findByTarget(
-    @Param('type') type: 'Post' | 'Comment',
-    @Param('id') id: number,
-  ) {
-    return this.commentService.findByTarget(type, +id);
+  @Get(':postId/tree')
+  async getCommentsTree(@Param('postId', ParseIntPipe) postId: number) {
+    return this.commentService.getCommentsTreeByPostId(postId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.commentService.remove(+id);
+  @Post()
+  async createComment(@Body() createCommentDto: CreateCommentDto): Promise<Comment> {
+    return this.commentService.create(createCommentDto);
   }
+
 
 
 

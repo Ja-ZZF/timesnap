@@ -5,36 +5,51 @@ import {
   Column,
   CreateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { User } from '../../user/entities/user.entity';
 
-@Entity({ name: 'comment' })
+import { User } from '../../user/entities/user.entity';
+import { Post } from '../../post/entities/post.entity';
+
+
+@Entity('comment')
 export class Comment {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   comment_id: number;
 
-  @Column()
+  @Column({ type: 'bigint' })
+  post_id: number;
+
+  @Column({ type: 'bigint', nullable: true })
+  parent_comment_id: number | null;
+
+  @Column({ type: 'bigint' })
   user_id: number;
 
+  @Column({ type: 'text' })
+  content: string;
+
+  @CreateDateColumn({ type: 'datetime', name: 'comment_time' })
+  comment_time: Date;
+
+  // 关联：评论所属用户
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ type: 'enum', enum: ['Post', 'Comment'] })
-  target_type: 'Post' | 'Comment';
+  // 关联：评论所属帖子
+  @ManyToOne(() => Post)
+  @JoinColumn({ name: 'post_id' })
+  post: Post;
 
-  @Column()
-  target_id: number;
+  // 关联：父评论（自己引用自己）
+  @ManyToOne(() => Comment, comment => comment.children, { nullable: true })
+  @JoinColumn({ name: 'parent_comment_id' })
+  parent: Comment;
 
-  @Column('text')
-  content: string;
-
-  @CreateDateColumn({ type: 'datetime' })
-  comment_time: Date;
-
-  @Column({type:'int',default:0})
-  like_count : number;
-
-  children?:Comment[];
+  // 关联：子评论（自己引用自己）
+  @OneToMany(() => Comment, comment => comment.parent)
+  children: Comment[];
 }
+
