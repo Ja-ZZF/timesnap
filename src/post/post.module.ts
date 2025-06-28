@@ -8,6 +8,7 @@ import { CommentService } from 'src/comment/comment.service';
 import { CommentModule } from 'src/comment/comment.module';
 import { UserModule } from 'src/user/user.module';
 import { MediaModule } from 'src/media/media.module';
+import { LikeModule } from 'src/like/like.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MediaModule } from 'src/media/media.module';
     CommentModule,
     UserModule,
     MediaModule,
+    LikeModule,
   ],
   providers: [PostService],
   controllers: [PostController],

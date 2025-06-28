@@ -38,8 +38,9 @@ export class PostController {
   @Post('simple')
   async getPostSimple(
     @Body('post_ids') postIds : number[],
+    @Body('userId') userId : number,
   ):Promise<any[]>{
-    return this.postService.getPostSimple(postIds);
+    return this.postService.getPostSimple(postIds,userId);
   }
 
   @HttpPost()

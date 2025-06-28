@@ -1,12 +1,13 @@
 // src/post/post.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Long, ManyToMany, Repository } from 'typeorm';
+import { DataSource, In, Long, ManyToMany, Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { NotFoundError } from 'rxjs';
 import { CommentService } from 'src/comment/comment.service';
 import { UserService } from 'src/user/user.service';
 import { MediaService } from 'src/media/media.service';
+import { LikeService } from 'src/like/like.service';
 
 @Injectable()
 export class PostService {
@@ -17,6 +18,7 @@ export class PostService {
     private readonly commentService: CommentService,
     private readonly userService: UserService,
     private readonly mediaService : MediaService,
+    private readonly likeService : LikeService,
   ) {}
 
   async findAll() : Promise<Post[]>{
@@ -144,38 +146,33 @@ export class PostService {
     };
   }
 
-  async getPostSimple(postIds: number[]): Promise<any[]> {
+  async getPostSimple(postIds: number[], userId: number): Promise<any[]> {
     if (!postIds || postIds.length === 0) return [];
 
-    const sql = `
-      SELECT 
-        p.post_id,
-        LEFT(p.content, 100) AS content,
-        p.like_count,
-        u.user_id,
-        u.nickname,
-        u.avatar,
-        m.url AS media_url
-      FROM post p
-      JOIN user u ON p.user_id = u.user_id
-      LEFT JOIN (
-        SELECT m1.*
-        FROM media m1
-        JOIN (
-          SELECT owner_id, MIN(media_id) AS min_media_id
-          FROM media
-          WHERE owner_type = 'Post'
-          GROUP BY owner_id
-        ) m2 ON m1.media_id = m2.min_media_id
-      ) m ON m.owner_id = p.post_id
-      WHERE p.post_id IN (${postIds.map(() => '?').join(',')})
-    `;
+    const posts = await this.postRepo.find({
+      where: { post_id: In(postIds) },
+      relations: ['user'],  // 预加载 user 关系
+      select: ['post_id', 'content', 'like_count', 'user'], // 你需要的字段
+    });
 
-    const result = await this.postRepo.query(sql, postIds);
+    const [mediaMap, likedSet] = await Promise.all([
+      this.mediaService.getPostCoverUrls(postIds),
+      this.likeService.getUserLikedPostIds(userId, postIds),
+    ]);
 
-    console.log(result);
+    //console.log(likedSet);
 
-    return result;
+    return posts.map(post => ({
+      id: post.post_id,
+      image: mediaMap.get(post.post_id) || null,
+      title:post.title,
+      avatar: post.user.avatar,
+      username: post.user.nickname,
+      likes: post.like_count,
+      isLiked: likedSet.has(Number(post.post_id)),
+      //content: post.content.slice(0, 100),
+    }));
+
   }
 
 }

@@ -40,6 +40,29 @@ export class MediaService {
     });
   }
 
+  async getPostCoverUrls(postIds: number[]): Promise<Map<number, string>> {
+    if (!postIds || postIds.length === 0) {
+      return new Map();
+    }
+
+    const mediaList = await this.mediaRepo.createQueryBuilder('m')
+      .select(['m.owner_id', 'm.url'])
+      .where('m.owner_type = :ownerType', { ownerType: 'Post' })
+      .andWhere('m.owner_id IN (:...postIds)', { postIds })
+      .orderBy('m.media_id', 'ASC')
+      .getRawMany();
+
+    const mediaMap = new Map<number, string>();
+    for (const m of mediaList) {
+      const ownerId = m.m_owner_id;  // getRawMany 返回的字段名可能是带前缀的
+      if (!mediaMap.has(ownerId)) {
+        mediaMap.set(ownerId, m.m_url);
+      }
+    }
+
+    return mediaMap;
+  }
+
 
 
   

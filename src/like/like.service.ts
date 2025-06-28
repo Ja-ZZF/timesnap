@@ -1,7 +1,7 @@
 // src/like/like.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Like } from './entities/like.entity';
 
 @Injectable()
@@ -37,6 +37,23 @@ export class LikeService {
       await this.likeRepo.save(like);
       return true;
     }
+  }
+
+  async getUserLikedPostIds(userId: number, postIds: number[]): Promise<Set<number>> {
+    if (!postIds || postIds.length === 0) return new Set();
+
+    const likes = await this.likeRepo.find({
+      where: {
+        user_id: userId,
+        target_type: 'Post',
+        target_id: In(postIds),
+      },
+      select: ['target_id'],
+    });
+
+    //console.log(likes);
+
+    return new Set(likes.map(like => like.target_id));
   }
 
 }
