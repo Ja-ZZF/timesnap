@@ -152,7 +152,7 @@ export class PostService {
     const posts = await this.postRepo.find({
       where: { post_id: In(postIds) },
       relations: ['user'],  // 预加载 user 关系
-      select: ['post_id', 'content', 'like_count', 'user'], // 你需要的字段
+      select: ['post_id', 'content', 'like_count', 'user','title'], // 你需要的字段
     });
 
     const [mediaMap, likedSet] = await Promise.all([
@@ -165,7 +165,7 @@ export class PostService {
     return posts.map(post => ({
       id: post.post_id,
       image: mediaMap.get(post.post_id) || null,
-      title:post.title,
+      title: post.title,
       avatar: post.user.avatar,
       username: post.user.nickname,
       likes: post.like_count,
