@@ -14,6 +14,7 @@ import { FollowModule } from './follow/follow.module';
 import { TagModule } from './tag/tag.module';
 import { PostTagModule } from './post_tag/post_tag.module';
 
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -30,6 +31,7 @@ import { PostTagModule } from './post_tag/post_tag.module';
       rootPath: join(__dirname,'..','uploads'),
       serveRoot:'/uploads',
     }),
+
     UserModule,
     PostModule,
     MediaModule,

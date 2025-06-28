@@ -7,8 +7,12 @@ export class CollectController {
   constructor(private readonly collectService: CollectService) {}
 
   @Post()
-  create(@Body() collect: Partial<Collect>) {
-    return this.collectService.create(collect);
+  async toggleCollect(
+    @Body('user_id') userId : number,
+    @Body('post_id') postId : number,
+  ):Promise<{result:boolean}>{
+    const collected = await this.collectService.toggleCollect(userId,postId);
+    return {result : collected};
   }
 
   @Get()

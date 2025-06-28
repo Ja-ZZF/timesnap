@@ -144,4 +144,38 @@ export class PostService {
     };
   }
 
+  async getPostSimple(postIds: number[]): Promise<any[]> {
+    if (!postIds || postIds.length === 0) return [];
+
+    const sql = `
+      SELECT 
+        p.post_id,
+        LEFT(p.content, 100) AS content,
+        p.like_count,
+        u.user_id,
+        u.nickname,
+        u.avatar,
+        m.url AS media_url
+      FROM post p
+      JOIN user u ON p.user_id = u.user_id
+      LEFT JOIN (
+        SELECT m1.*
+        FROM media m1
+        JOIN (
+          SELECT owner_id, MIN(media_id) AS min_media_id
+          FROM media
+          WHERE owner_type = 'Post'
+          GROUP BY owner_id
+        ) m2 ON m1.media_id = m2.min_media_id
+      ) m ON m.owner_id = p.post_id
+      WHERE p.post_id IN (${postIds.map(() => '?').join(',')})
+    `;
+
+    const result = await this.postRepo.query(sql, postIds);
+
+    console.log(result);
+
+    return result;
+  }
+
 }

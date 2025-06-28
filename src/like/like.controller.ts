@@ -13,6 +13,17 @@ export class LikeController {
   }
 
   @Post()
+  async toggleLike(
+    @Body('user_id') userId: number,
+    @Body('target_type') targetType : 'Post' | 'Comment',
+    @Body('target_id') targetId: number,
+
+  ): Promise<{ result: boolean }> {
+    const liked = await this.likeService.toggleLike(userId, targetType,targetId);
+    return { result: liked }; // true: 已点赞，false: 取消点赞
+  }
+
+  @Post()
   create(@Body() like: Partial<Like>) {
     return this.likeService.create(like);
   }

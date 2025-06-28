@@ -24,4 +24,19 @@ export class LikeService {
     return this.likeRepo.find();
   }
 
+  async toggleLike(userId : number , targetType:'Post' | 'Comment', targetId : number): Promise<boolean>{
+    const existing = await this.likeRepo.findOne({
+      where:{user_id:userId,target_type:targetType,target_id:targetId},
+    });
+
+    if(existing){
+      await this.likeRepo.remove(existing);
+      return false;
+    }else{
+      const like = this.likeRepo.create({user_id : userId,target_type:targetType,target_id:targetId});
+      await this.likeRepo.save(like);
+      return true;
+    }
+  }
+
 }
