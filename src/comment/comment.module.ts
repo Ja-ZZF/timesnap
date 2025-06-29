@@ -8,11 +8,14 @@ import { Post } from 'src/post/entities/post.entity'
 import { User } from 'src/user/entities/user.entity'
 import { UserModule } from 'src/user/user.module';
 import { MediaModule } from 'src/media/media.module';
+import { LikeService } from 'src/like/like.service';
+import { LikeModule } from 'src/like/like.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Comment,Post,User])
             ,UserModule
             ,MediaModule
+            ,LikeModule
             ], // ✅ 关键
   controllers: [CommentController],
   providers: [CommentService],

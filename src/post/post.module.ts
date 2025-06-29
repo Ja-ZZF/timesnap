@@ -9,6 +9,8 @@ import { CommentModule } from 'src/comment/comment.module';
 import { UserModule } from 'src/user/user.module';
 import { MediaModule } from 'src/media/media.module';
 import { LikeModule } from 'src/like/like.module';
+import { Follow } from 'src/follow/entities/follow.entity';
+import { FollowModule } from 'src/follow/follow.module';
 
 @Module({
   imports: [
@@ -17,6 +19,7 @@ import { LikeModule } from 'src/like/like.module';
     UserModule,
     MediaModule,
     LikeModule,
+    FollowModule,
   ],
   providers: [PostService],
   controllers: [PostController],

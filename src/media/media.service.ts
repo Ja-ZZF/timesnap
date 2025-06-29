@@ -40,6 +40,28 @@ export class MediaService {
     });
   }
 
+  async findByOwnerBatch(ownerType: 'Post' | 'Comment', ownerIds: number[]): Promise<Map<number, any[]>> {
+    if (!ownerIds || ownerIds.length === 0) return new Map();
+
+    const medias = await this.mediaRepo.find({
+      where: {
+        owner_type: ownerType,
+        owner_id: In(ownerIds),
+      }
+    });
+
+    const map = new Map<number, any[]>();
+    for (const media of medias) {
+      if (!map.has(media.owner_id)) {
+        map.set(media.owner_id, []);
+      }
+      map.get(media.owner_id)!.push(media);
+    }
+
+    return map;
+  }
+
+
   async getPostCoverUrls(postIds: number[]): Promise<Map<number, string>> {
     if (!postIds || postIds.length === 0) {
       return new Map();

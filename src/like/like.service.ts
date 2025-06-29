@@ -56,4 +56,21 @@ export class LikeService {
     return new Set(likes.map(like => like.target_id));
   }
 
+  async getUserLikedCommentIds(userId: number, commentIds: number[]): Promise<Set<number>> {
+    if (!commentIds || commentIds.length === 0) return new Set();
+
+    const likes = await this.likeRepo.find({
+      where: {
+        user_id: userId,
+        target_type: 'Comment',
+        target_id: In(commentIds),
+      },
+      select: ['target_id'],
+    });
+
+    //console.log(likes);
+
+    return new Set(likes.map(like => like.target_id));
+  }
+
 }
