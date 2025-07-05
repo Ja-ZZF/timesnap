@@ -29,24 +29,18 @@ export class PostController {
     return this.postService.getPostDetail(postId, userId);
   }
 
+
   @Get('user/:userId')
   findByUserId(@Param('userId',ParseIntPipe) userId : number){
     return this.postService.findByUserId(userId);
   }
 
-  @Get('follow/:userId')
-  getfollowedPostSimple(@Param('userId') userId :number){
-    return this.postService.getFollowedPostSimple(userId);
-  }
-
   @Post('simple')
   async getPostSimple(
     @Body('post_ids') postIds : number[],
-    @Body('userId') userId : number,
   ):Promise<any[]>{
-    return this.postService.getPostSimple(postIds,userId);
+    return this.postService.getPostSimple(postIds);
   }
-
 
   @HttpPost()
   create(@Body() postData: Partial<PostEntity>): Promise<PostEntity> {

@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Follow } from './entities/follow.entity';
-import { userInfo } from 'os';
-import { PipelinePromise } from 'stream';
 
 @Injectable()
 export class FollowService {
@@ -30,14 +28,5 @@ export class FollowService {
 
   async findFollowings(user_id: number) {
     return this.followRepo.find({ where: { follower_user_id: user_id } });
-  }
-
-  async findFollowedList(user_id : number) : Promise<number[]>{
-    const followedUsers = await this.followRepo.find({
-      where:{follower_user_id : user_id},
-      select :['followed_user_id'],
-    });
-
-    return followedUsers.map(f => f.followed_user_id);
   }
 }

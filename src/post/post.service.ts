@@ -1,15 +1,12 @@
 // src/post/post.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Long, ManyToMany, Repository } from 'typeorm';
+import { DataSource, Long, ManyToMany, Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { NotFoundError } from 'rxjs';
 import { CommentService } from 'src/comment/comment.service';
 import { UserService } from 'src/user/user.service';
 import { MediaService } from 'src/media/media.service';
-import { LikeService } from 'src/like/like.service';
-import { Follow } from 'src/follow/entities/follow.entity';
-import { FollowService } from 'src/follow/follow.service';
 
 @Injectable()
 export class PostService {
@@ -18,10 +15,8 @@ export class PostService {
     private postRepo: Repository<Post>,
     private dataSource : DataSource,
     private readonly commentService: CommentService,
-    private readonly userService: UserService,
+    @Inject(forwardRef(() => UserService)) private readonly userService: UserService,
     private readonly mediaService : MediaService,
-    private readonly likeService : LikeService,
-    private readonly followService : FollowService,
   ) {}
 
   async findAll() : Promise<Post[]>{
@@ -42,17 +37,6 @@ export class PostService {
       ORDER BY publish_time DESC
     `;
     return this.dataSource.query(sql,[userId]);
-  }
-
-  async findByUserIds(userIds : number[]) : Promise<number[]>{
-    if(!userIds || userIds.length == 0) return [];
-
-    const posts  = await this.postRepo.find({
-      where : {user_id : In(userIds)},
-      select : ['post_id'],
-    });
-
-    return posts.map(post=>post.post_id);
   }
 
   async create(postData: Partial<Post>): Promise<Post> {
@@ -107,6 +91,7 @@ export class PostService {
     //查询图片信息
     const medias = await this.mediaService.findByOwner("Post",postId);
     
+    
     //查询评论树
     const commentsTree = await this.commentService.getCommentsWithUserInfoAndMediasByPostId(postId);
 
@@ -159,35 +144,38 @@ export class PostService {
     };
   }
 
-  async getPostSimple(postIds: number[], userId: number): Promise<any[]> {
+  async getPostSimple(postIds: number[]): Promise<any[]> {
     if (!postIds || postIds.length === 0) return [];
 
-    const posts = await this.postRepo.find({
-      where: { post_id: In(postIds) },
-      relations: ['user'],
-      select: ['post_id', 'content', 'like_count', 'user', 'title', 'cover_url'],
-    });
+    const sql = `
+      SELECT 
+        p.post_id,
+        LEFT(p.content, 100) AS content,
+        p.like_count,
+        u.user_id,
+        u.nickname,
+        u.avatar,
+        m.url AS media_url
+      FROM post p
+      JOIN user u ON p.user_id = u.user_id
+      LEFT JOIN (
+        SELECT m1.*
+        FROM media m1
+        JOIN (
+          SELECT owner_id, MIN(media_id) AS min_media_id
+          FROM media
+          WHERE owner_type = 'Post'
+          GROUP BY owner_id
+        ) m2 ON m1.media_id = m2.min_media_id
+      ) m ON m.owner_id = p.post_id
+      WHERE p.post_id IN (${postIds.map(() => '?').join(',')})
+    `;
 
-    const likedSet = await this.likeService.getUserLikedPostIds(userId, postIds);
+    const result = await this.postRepo.query(sql, postIds);
 
-    return posts.map(post => ({
-      id: post.post_id,
-      image: post.cover_url || null,     // ✅ 直接用 post 表中的封面图字段
-      title: post.title,
-      avatar: post.user.avatar,
-      username: post.user.nickname,
-      likes: post.like_count,
-      isLiked: likedSet.has(Number(post.post_id)),
-      // content: post.content.slice(0, 100), // 可选内容预览
-    }));
-  }
+    console.log(result);
 
-  async getFollowedPostSimple(userId : number) : Promise<any[]>{
-    const followedUserIds = await this.followService.findFollowedList(userId);
-
-    const followedPostIds = await this.findByUserIds(followedUserIds);
-
-    return this.getPostSimple(followedPostIds,userId);
+    return result;
   }
 
 }

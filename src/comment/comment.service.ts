@@ -1,5 +1,5 @@
 // src/comment/comment.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Comment } from './entities/comment.entity';
@@ -9,7 +9,6 @@ import { User } from 'src/user/entities/user.entity';
 import { UserBasicInfo } from 'src/user/dto/user-basic-info.dto';
 import { UserService } from 'src/user/user.service';
 import { MediaService } from 'src/media/media.service';
-import { LikeService } from 'src/like/like.service';
 
 @Injectable()
 export class CommentService {
@@ -23,9 +22,8 @@ export class CommentService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
 
-    private readonly userService: UserService,
+    @Inject(forwardRef(() => UserService)) private readonly userService: UserService,
     private readonly mediaService : MediaService,
-    private readonly likeService : LikeService,
   ) {}
 
 
@@ -62,77 +60,82 @@ export class CommentService {
     return this.commentRepo.save(comment);
   }
 
-  private async getAllComments(postId: number) {
-    return this.commentRepo.find({
-      where: { post_id: postId },
-      order: { comment_time: 'ASC' },
-    });
-  }
+async getCommentsWithUserInfoAndMediasByPostId(postId: number): Promise<any[]> {
+  // 查询所有评论
+  const allComments = await this.commentRepo.find({
+    where: { post_id: postId },
+    order: { comment_time: 'ASC' },
+  });
 
-  private async getUserMapFromComments(comments: Comment[]): Promise<Map<number, any>> {
-    const userIds = Array.from(new Set(comments.map(c => c.user_id)));
-    const users = await this.userService.getBasicUserInfoByIds(userIds);
-    const map = new Map<number, any>();
-    users.forEach(user => map.set(user.user_id, user));
-    return map;
-  }
+  const userIds = Array.from(new Set(allComments.map(c => c.user_id)));
+  const users = await this.userService.getBasicUserInfoByIds(userIds);
+  const userMap = new Map<number, any>();
+  users.forEach(user => userMap.set(user.user_id, user));
 
-  private async getMediaMapFromComments(comments: Comment[]): Promise<Map<number, any[]>> {
-    const commentIds = comments.map(c => c.comment_id);
-    return this.mediaService.findByOwnerBatch('Comment', commentIds);
-  }
+  // 先拿到所有评论id
+  const commentIds = allComments.map(c => c.comment_id);
 
-  private buildEnrichedComments(
-    comments: any[],
-    userMap: Map<number, any>,
-    mediaMap: Map<number, any[]>,
-    likedSet: Set<number>
-  ): any[] {
-    return comments.map(comment => ({
-      ...comment,
-      user: userMap.get(comment.user_id) || null,
-      medias: mediaMap.get(comment.comment_id) || [],
-      isLiked: likedSet.has(comment.comment_id),
-      children: []  // 🌳 用于构造树结构
-    }));
-  }
+  // 用 Promise.all 并行批量获取每条评论的media
+  // 注意这里是多条评论，每条调用一次mediaService，开销大时可优化
+  const mediasArr = await Promise.all(
+    commentIds.map(id => this.mediaService.findByOwner('Comment', id))
+  );
 
-  private buildCommentTree(enrichedComments: any[]): any[] {
-    const commentMap = new Map<number, any>();
-    enrichedComments.forEach(c => commentMap.set(c.comment_id, c));
+  // mediasArr 和 commentIds 对应，把 medias映射到对应评论id
+  const mediaMap = new Map<number, any[]>();
+  commentIds.forEach((id, index) => {
+    mediaMap.set(id, mediasArr[index]);
+  });
 
-    const root: any[] = [];
+  // 组装结果
+  // 组装 enriched 评论列表（加上 user 和 medias）
+  const enrichedComments = allComments.map(comment => ({
+    ...comment,
+    user: userMap.get(comment.user_id) || null,
+    medias: mediaMap.get(comment.comment_id) || [],
+    children: [] // 🌳 预留子评论
+  }));
 
-    for (const comment of enrichedComments) {
-      if (comment.parent_comment_id) {
-        const parent = commentMap.get(comment.parent_comment_id);
-        if (parent) {
-          parent.children.push(comment);
-        } else {
-          root.push(comment); // 防御性兜底
-        }
+  // 构建树结构
+  const commentMap = new Map<number, any>();
+  enrichedComments.forEach(comment => commentMap.set(comment.comment_id, comment));
+
+  const rootComments: any[] = [];
+
+  enrichedComments.forEach(comment => {
+    if (comment.parent_comment_id) {
+      const parent = commentMap.get(comment.parent_comment_id);
+      if (parent) {
+        parent.children.push(comment);
       } else {
-        root.push(comment);
+        // 万一 parent_comment_id 存在但查不到，兜底为根评论
+        rootComments.push(comment);
       }
+    } else {
+      rootComments.push(comment);
     }
+  });
 
-    return root;
-  }
+  return rootComments;
 
-async getCommentsWithUserInfoAndMediasByPostId(postId: number, userId?: number): Promise<any[]> {
-  const allComments = await this.getAllComments(postId);
-  const userMap = await this.getUserMapFromComments(allComments);
-  const mediaMap = await this.getMediaMapFromComments(allComments);
-
-  const commentIds = allComments.map(c => c.comment_id); // ✅ 修复这里
-  const likedSet = userId
-    ? (await this.likeService.getUserLikedCommentIds(userId, commentIds)) as Set<number>
-    : new Set<number>();
-
-  const enrichedComments = this.buildEnrichedComments(allComments, userMap, mediaMap, likedSet);
-  return this.buildCommentTree(enrichedComments);
 }
 
+
+
+
+// private buildTreeWithUser(
+//   comments: Comment[],
+//   userMap: Map<number, UserBasicInfo>,
+//   parentId: number | null = null,
+// ): CommentTree[] {
+//   return comments
+//     .filter(c => c.parent_comment_id === parentId)
+//     .map(c => ({
+//       ...c,
+//       user: userMap.get(c.user_id) ?? null,
+//       children: this.buildTreeWithUser(comments, userMap, c.comment_id),
+//     }));
+// }
 
 
 }

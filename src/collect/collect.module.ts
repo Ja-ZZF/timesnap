@@ -8,5 +8,6 @@ import { Collect } from './entities/collect.entity';
   imports: [TypeOrmModule.forFeature([Collect])],
   controllers: [CollectController],
   providers: [CollectService],
+  exports: [CollectService],
 })
 export class CollectModule {}

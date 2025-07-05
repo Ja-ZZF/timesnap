@@ -30,4 +30,14 @@ export class ConversationController {
         return this.conversationService.create(conversation);
     }
 
+    @Get('/users/:id/message-previews')
+    async getMessagePreviews(@Param('id') id: string) {
+      return this.conversationService.getMessagePreviews(+id);
+    }
+
+    @Get(':conversationId/messages')
+    async getMessages(@Param('conversationId') conversationId: string) {
+      return this.conversationService.getMessagesByConversationId(+conversationId);
+    }
+
 }

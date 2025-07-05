@@ -8,6 +8,6 @@ import { FollowController } from './follow.controller';
   imports: [TypeOrmModule.forFeature([Follow])],
   providers: [FollowService],
   controllers: [FollowController],
-  exports:[FollowService],
+  exports: [FollowService], // 这一行必须有
 })
 export class FollowModule {}

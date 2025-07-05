@@ -30,10 +30,4 @@ export class FollowController {
   getFollowings(@Param('id') id: number) {
     return this.followService.findFollowings(id);
   }
-  
-  @Get('followingsList/:id')
-  getFollowingsList(@Param('id') id : number){
-    return this.followService.findFollowedList(id);
-  }
-
 }

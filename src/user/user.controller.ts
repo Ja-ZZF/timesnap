@@ -20,6 +20,10 @@ export class UserController {
     return user;
   }
 
+  @Get(':id/mine')
+  async getMinePageInfo(@Param('id') id: string) {
+    return this.userService.getMinePageInfo(+id);
+  }
 
   @Post()
   create(@Body() userData: Partial<User>): Promise<User> {
@@ -29,5 +33,20 @@ export class UserController {
   @Delete(':id')
   remove(@Param('id') id: string): Promise<void> {
     return this.userService.remove(+id);
+  }
+
+  @Get(':id/posts')
+  async getMyPosts(@Param('id') id: string) {
+    return this.userService.getMyPosts(+id);
+  }
+
+  @Get(':id/collections')
+  async getMyCollections(@Param('id') id: string) {
+    return this.userService.getMyCollections(+id);
+  }
+
+  @Get(':id/likes')
+  async getMyLikes(@Param('id') id: string) {
+    return this.userService.getMyLikes(+id);
   }
 }

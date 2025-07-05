@@ -1,25 +1,18 @@
-// src/post/post.module.ts
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Post } from './entities/post.entity';
 import { PostService } from './post.service';
 import { PostController } from './post.controller';
-import { CommentService } from 'src/comment/comment.service';
-import { CommentModule } from 'src/comment/comment.module';
-import { UserModule } from 'src/user/user.module';
-import { MediaModule } from 'src/media/media.module';
-import { LikeModule } from 'src/like/like.module';
-import { Follow } from 'src/follow/entities/follow.entity';
-import { FollowModule } from 'src/follow/follow.module';
+import { CommentModule } from '../comment/comment.module';
+import { UserModule } from '../user/user.module';
+import { MediaModule } from '../media/media.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Post]),
-    CommentModule,
-    UserModule,
+    forwardRef(() => CommentModule), // 互相导入时用 forwardRef 包裹
+    forwardRef(() => UserModule),
     MediaModule,
-    LikeModule,
-    FollowModule,
   ],
   providers: [PostService],
   controllers: [PostController],

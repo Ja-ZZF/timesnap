@@ -42,7 +42,4 @@ export class Post {
   @Column({ type: 'enum', enum: ['Public', 'FansOnly', 'MutualOnly', 'Closed'], default: 'Public' })
   comment_permission: 'Public' | 'FansOnly' | 'MutualOnly' | 'Closed';
 
-  @Column({type:'varchar',length:200})
-  cover_url : string;
-
 }

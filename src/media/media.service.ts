@@ -40,51 +40,6 @@ export class MediaService {
     });
   }
 
-  async findByOwnerBatch(ownerType: 'Post' | 'Comment', ownerIds: number[]): Promise<Map<number, any[]>> {
-    if (!ownerIds || ownerIds.length === 0) return new Map();
-
-    const medias = await this.mediaRepo.find({
-      where: {
-        owner_type: ownerType,
-        owner_id: In(ownerIds),
-      }
-    });
-
-    const map = new Map<number, any[]>();
-    for (const media of medias) {
-      if (!map.has(media.owner_id)) {
-        map.set(media.owner_id, []);
-      }
-      map.get(media.owner_id)!.push(media);
-    }
-
-    return map;
-  }
-
-
-  async getPostCoverUrls(postIds: number[]): Promise<Map<number, string>> {
-    if (!postIds || postIds.length === 0) {
-      return new Map();
-    }
-
-    const mediaList = await this.mediaRepo.createQueryBuilder('m')
-      .select(['m.owner_id', 'm.url'])
-      .where('m.owner_type = :ownerType', { ownerType: 'Post' })
-      .andWhere('m.owner_id IN (:...postIds)', { postIds })
-      .orderBy('m.media_id', 'ASC')
-      .getRawMany();
-
-    const mediaMap = new Map<number, string>();
-    for (const m of mediaList) {
-      const ownerId = m.m_owner_id;  // getRawMany 返回的字段名可能是带前缀的
-      if (!mediaMap.has(ownerId)) {
-        mediaMap.set(ownerId, m.m_url);
-      }
-    }
-
-    return mediaMap;
-  }
-
 
 
   

@@ -6,10 +6,10 @@ export class Follow {
   follow_id: number;
 
   @Column()
-  follower_user_id: number; //关注者
+  follower_user_id: number;
 
   @Column()
-  followed_user_id: number; //被关注者
+  followed_user_id: number;
 
   @CreateDateColumn({ type: 'datetime' })
   follow_time: Date;
