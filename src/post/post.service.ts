@@ -6,13 +6,16 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Long, ManyToMany, Repository } from 'typeorm';
+import { DataSource, In, Long, ManyToMany, Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { NotFoundError } from 'rxjs';
 import { CommentService } from 'src/comment/comment.service';
 import { UserService } from 'src/user/user.service';
 import { MediaService } from 'src/media/media.service';
 import { RedisService } from 'src/redis/redis.service';
+import { LikeService } from 'src/like/like.service';
+import { FollowService } from 'src/follow/follow.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class PostService {
@@ -24,6 +27,8 @@ export class PostService {
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly mediaService: MediaService,
+    private readonly likeService: LikeService,
+    private readonly followService: FollowService,
     private readonly redisService: RedisService, // ✅ 注入 Redis
   ) {}
 
@@ -45,6 +50,17 @@ export class PostService {
       ORDER BY publish_time DESC
     `;
     return this.dataSource.query(sql, [userId]);
+  }
+
+  async findByUserIds(userIds: number[]): Promise<number[]> {
+    if (!userIds || userIds.length == 0) return [];
+
+    const posts = await this.postRepo.find({
+      where: { user_id: In(userIds) },
+      select: ['post_id'],
+    });
+
+    return posts.map((post) => post.post_id);
   }
 
   async create(postData: Partial<Post>): Promise<Post> {
@@ -83,7 +99,7 @@ export class PostService {
     if (cached) {
       console.log('缓存命中');
       return JSON.parse(cached);
-    }else{
+    } else {
       console.log('缓存未命中');
     }
 
@@ -163,52 +179,60 @@ export class PostService {
     return result;
   }
 
-  async getPostSimple(postIds: number[]): Promise<any[]> {
+  async getPostSimple(postIds: number[], userId: number): Promise<any[]> {
     if (!postIds || postIds.length === 0) return [];
 
-    const results: any[] = [];
+    const postIdsKey = crypto
+      .createHash('md5')
+      .update(postIds.join(','))
+      .digest('hex');
+    const cacheKey = `post:simple:user:${userId}:posts:${postIdsKey}`;
 
-    for (const postId of postIds) {
-      const cacheKey = `post:simple:${postId}`;
-      const cached = await this.redisService.get(cacheKey);
-
-      if (cached) {
-        results.push(JSON.parse(cached));
-        continue;
-      }
-
-      const sql = `
-      SELECT 
-        p.post_id,
-        LEFT(p.content, 100) AS content,
-        p.like_count,
-        u.user_id,
-        u.nickname,
-        u.avatar,
-        m.url AS media_url
-      FROM post p
-      JOIN user u ON p.user_id = u.user_id
-      LEFT JOIN (
-        SELECT m1.*
-        FROM media m1
-        JOIN (
-          SELECT owner_id, MIN(media_id) AS min_media_id
-          FROM media
-          WHERE owner_type = 'Post'
-          GROUP BY owner_id
-        ) m2 ON m1.media_id = m2.min_media_id
-      ) m ON m.owner_id = p.post_id
-      WHERE p.post_id = ?
-    `;
-
-      const [item] = await this.dataSource.query(sql, [postId]);
-
-      if (item) {
-        await this.redisService.set(cacheKey, JSON.stringify(item), 60); // 缓存 60 秒
-        results.push(item);
-      }
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      console.log(`[Redis] 命中 ${cacheKey}`);
+      return JSON.parse(cached);
     }
 
-    return results;
+    console.log(`[Redis] 未命中 ${cacheKey}，查询数据库`);
+
+    const posts = await this.postRepo.find({
+      where: { post_id: In(postIds) },
+      relations: ['user'],
+      select: [
+        'post_id',
+        'content',
+        'like_count',
+        'user',
+        'title',
+        'cover_url',
+      ],
+    });
+
+    const likedSet = await this.likeService.getUserLikedPostIds(
+      userId,
+      postIds,
+    );
+
+    const result = posts.map((post) => ({
+      id: post.post_id,
+      image: post.cover_url || null,
+      title: post.title,
+      avatar: post.user.avatar,
+      username: post.user.nickname,
+      likes: post.like_count,
+      isLiked: likedSet.has(Number(post.post_id)),
+    }));
+
+    await this.redisService.set(cacheKey, JSON.stringify(result), 300); // 有效期 5 分钟
+    return result;
+  }
+
+  async getFollowedPostSimple(userId: number): Promise<any[]> {
+    const followedUserIds = await this.followService.findFollowedList(userId);
+
+    const followedPostIds = await this.findByUserIds(followedUserIds);
+
+    return this.getPostSimple(followedPostIds, userId);
   }
 }

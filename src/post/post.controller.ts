@@ -35,12 +35,19 @@ export class PostController {
     return this.postService.findByUserId(userId);
   }
 
+  @Get('follow/:userId')
+  getfollowedPostSimple(@Param('userId') userId :number){
+    return this.postService.getFollowedPostSimple(userId);
+  }
+
   @Post('simple')
   async getPostSimple(
     @Body('post_ids') postIds : number[],
+    @Body('userId') userId : number,
   ):Promise<any[]>{
-    return this.postService.getPostSimple(postIds);
+    return this.postService.getPostSimple(postIds,userId);
   }
+
 
   @HttpPost()
   create(@Body() postData: Partial<PostEntity>): Promise<PostEntity> {

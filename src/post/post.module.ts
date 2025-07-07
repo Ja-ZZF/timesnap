@@ -6,6 +6,8 @@ import { PostController } from './post.controller';
 import { CommentModule } from '../comment/comment.module';
 import { UserModule } from '../user/user.module';
 import { MediaModule } from '../media/media.module';
+import { FollowModule } from 'src/follow/follow.module';
+import { LikeModule } from 'src/like/like.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { MediaModule } from '../media/media.module';
     forwardRef(() => CommentModule), // 互相导入时用 forwardRef 包裹
     forwardRef(() => UserModule),
     MediaModule,
+    FollowModule,
+    LikeModule,
   ],
   providers: [PostService],
   controllers: [PostController],
