@@ -1,9 +1,10 @@
-// redis/redis.module.ts
-import { Module } from '@nestjs/common';
-import { RedisProvider } from './redis.provider';
+import { Module, Global } from '@nestjs/common';
+import { RedisService } from './redis.service';
 
+
+@Global()
 @Module({
-  providers: [RedisProvider],
-  exports: [RedisProvider],
+  providers: [RedisService],
+  exports: [RedisService],
 })
 export class RedisModule {}

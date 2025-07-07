@@ -14,6 +14,7 @@ import { FollowModule } from './follow/follow.module';
 import { TagModule } from './tag/tag.module';
 import { PostTagModule } from './post_tag/post_tag.module';
 import { ConfigModule } from '@nestjs/config'; // ✅ 导入 ConfigModule
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ConfigModule } from '@nestjs/config'; // ✅ 导入 ConfigModule
     FollowModule,
     TagModule,
     PostTagModule,
+    RedisModule,
   ],
 })
 export class AppModule {}

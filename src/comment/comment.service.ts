@@ -1,5 +1,10 @@
 // src/comment/comment.service.ts
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Comment } from './entities/comment.entity';
@@ -9,6 +14,7 @@ import { User } from 'src/user/entities/user.entity';
 import { UserBasicInfo } from 'src/user/dto/user-basic-info.dto';
 import { UserService } from 'src/user/user.service';
 import { MediaService } from 'src/media/media.service';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class CommentService {
@@ -22,10 +28,12 @@ export class CommentService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
 
-    @Inject(forwardRef(() => UserService)) private readonly userService: UserService,
-    private readonly mediaService : MediaService,
-  ) {}
+    @Inject(forwardRef(() => UserService))
+    private readonly userService: UserService,
+    private readonly mediaService: MediaService,
 
+    private readonly redisService: RedisService, // ✅ 注入 Redis
+  ) {}
 
   findAll(): Promise<Comment[]> {
     //console.log('1111');
@@ -44,9 +52,11 @@ export class CommentService {
     if (!user) throw new NotFoundException('User not found');
 
     // 如果是子评论，校验父评论存在
-    let parent: Comment | null =null;
+    let parent: Comment | null = null;
     if (parent_comment_id) {
-      parent = await this.commentRepo.findOneBy({ comment_id: parent_comment_id });
+      parent = await this.commentRepo.findOneBy({
+        comment_id: parent_comment_id,
+      });
       if (!parent) throw new NotFoundException('Parent comment not found');
     }
 
@@ -60,84 +70,71 @@ export class CommentService {
     return this.commentRepo.save(comment);
   }
 
-async getCommentsWithUserInfoAndMediasByPostId(postId: number): Promise<any[]> {
-  // 查询所有评论
-  const allComments = await this.commentRepo.find({
-    where: { post_id: postId },
-    order: { comment_time: 'ASC' },
-  });
+  async getCommentsWithUserInfoAndMediasByPostId(
+    postId: number,
+  ): Promise<any[]> {
+    console.log('开始查询缓存...');
+    const cacheKey = `post:${postId}:comments:tree`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) {
+      console.log('缓存命中');
+      return JSON.parse(cached);
+    }else{
+      console.log('缓存未命中');
+    }
 
-  const userIds = Array.from(new Set(allComments.map(c => c.user_id)));
-  const users = await this.userService.getBasicUserInfoByIds(userIds);
-  const userMap = new Map<number, any>();
-  users.forEach(user => userMap.set(user.user_id, user));
+    // === 原始逻辑 ===
+    const allComments = await this.commentRepo.find({
+      where: { post_id: postId },
+      order: { comment_time: 'ASC' },
+    });
 
-  // 先拿到所有评论id
-  const commentIds = allComments.map(c => c.comment_id);
+    const userIds = Array.from(new Set(allComments.map((c) => c.user_id)));
+    const users = await this.userService.getBasicUserInfoByIds(userIds);
+    const userMap = new Map<number, any>();
+    users.forEach((user) => userMap.set(user.user_id, user));
 
-  // 用 Promise.all 并行批量获取每条评论的media
-  // 注意这里是多条评论，每条调用一次mediaService，开销大时可优化
-  const mediasArr = await Promise.all(
-    commentIds.map(id => this.mediaService.findByOwner('Comment', id))
-  );
+    const commentIds = allComments.map((c) => c.comment_id);
+    const mediasArr = await Promise.all(
+      commentIds.map((id) => this.mediaService.findByOwner('Comment', id)),
+    );
 
-  // mediasArr 和 commentIds 对应，把 medias映射到对应评论id
-  const mediaMap = new Map<number, any[]>();
-  commentIds.forEach((id, index) => {
-    mediaMap.set(id, mediasArr[index]);
-  });
+    const mediaMap = new Map<number, any[]>();
+    commentIds.forEach((id, index) => {
+      mediaMap.set(id, mediasArr[index]);
+    });
 
-  // 组装结果
-  // 组装 enriched 评论列表（加上 user 和 medias）
-  const enrichedComments = allComments.map(comment => ({
-    ...comment,
-    user: userMap.get(comment.user_id) || null,
-    medias: mediaMap.get(comment.comment_id) || [],
-    children: [] // 🌳 预留子评论
-  }));
+    const enrichedComments = allComments.map((comment) => ({
+      ...comment,
+      user: userMap.get(comment.user_id) || null,
+      medias: mediaMap.get(comment.comment_id) || [],
+      children: [],
+    }));
 
-  // 构建树结构
-  const commentMap = new Map<number, any>();
-  enrichedComments.forEach(comment => commentMap.set(comment.comment_id, comment));
+    const commentMap = new Map<number, any>();
+    enrichedComments.forEach((comment) =>
+      commentMap.set(comment.comment_id, comment),
+    );
 
-  const rootComments: any[] = [];
+    const rootComments: any[] = [];
 
-  enrichedComments.forEach(comment => {
-    if (comment.parent_comment_id) {
-      const parent = commentMap.get(comment.parent_comment_id);
-      if (parent) {
-        parent.children.push(comment);
+    enrichedComments.forEach((comment) => {
+      if (comment.parent_comment_id) {
+        const parent = commentMap.get(comment.parent_comment_id);
+        if (parent) {
+          parent.children.push(comment);
+        } else {
+          rootComments.push(comment);
+        }
       } else {
-        // 万一 parent_comment_id 存在但查不到，兜底为根评论
         rootComments.push(comment);
       }
-    } else {
-      rootComments.push(comment);
-    }
-  });
+    });
 
-  return rootComments;
+    // ✅ 写入缓存，60 秒
+    await this.redisService.set(cacheKey, JSON.stringify(rootComments), 60);
+    console.log('缓存已写入，时间60s');
 
+    return rootComments;
+  }
 }
-
-
-
-
-// private buildTreeWithUser(
-//   comments: Comment[],
-//   userMap: Map<number, UserBasicInfo>,
-//   parentId: number | null = null,
-// ): CommentTree[] {
-//   return comments
-//     .filter(c => c.parent_comment_id === parentId)
-//     .map(c => ({
-//       ...c,
-//       user: userMap.get(c.user_id) ?? null,
-//       children: this.buildTreeWithUser(comments, userMap, c.comment_id),
-//     }));
-// }
-
-
-}
-
-type CommentTree = Comment & { children: CommentTree[] };
