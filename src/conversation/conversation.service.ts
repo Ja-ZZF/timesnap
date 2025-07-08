@@ -34,10 +34,10 @@ export class ConversationService {
     }
 
     // 获取用户所有会话的最新消息预览
-    async getMessagePreviews(userId: number): Promise<{ avatar: string; name: string; message: string }[]> {
+    async getMessagePreviews(userId: number): Promise<{ avatar: string; name: string; message: string; conversationId: string }[]> {
       try {
         const conversations = await this.ConversationRepo.find();
-        const previews: { avatar: string; name: string; message: string }[] = [];
+        const previews: { avatar: string; name: string; message: string; conversationId: string }[] = [];
         for (const conv of conversations) {
           const latestMsg = await this.MessageRepo.findOne({
             where: { conversation_id: conv.conversation_id },
@@ -50,6 +50,7 @@ export class ConversationService {
             avatar: user.avatar,
             name: user.nickname,
             message: latestMsg.content,
+            conversationId: String(conv.conversation_id),
           });
         }
         return previews;
@@ -100,5 +101,37 @@ export class ConversationService {
         });
       }
       return result;
+    }
+
+    async sendMessage({
+      conversationId,
+      userId,
+      content,
+      isImage,
+    }: {
+      conversationId: number;
+      userId: number;
+      content: string;
+      isImage?: boolean;
+    }) {
+      const message = this.MessageRepo.create({
+        conversation_id: conversationId,
+        user_id: userId,
+        content,
+        is_image: isImage ?? false,
+      });
+      await this.MessageRepo.save(message);
+      // 返回格式与 getMessagesByConversationId 一致
+      const user = await this.UserRepo.findOne({ where: { user_id: userId } });
+      return {
+        time: message.send_time?.toISOString() ?? new Date().toISOString(),
+        content: message.content,
+        isImage: message.is_image,
+        user: {
+          user_id: String(user?.user_id ?? userId),
+          avatar: user?.avatar ?? '',
+          name: user?.nickname ?? '',
+        },
+      };
     }
 }

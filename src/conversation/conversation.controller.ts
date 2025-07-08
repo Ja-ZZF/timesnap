@@ -40,4 +40,23 @@ export class ConversationController {
       return this.conversationService.getMessagesByConversationId(+conversationId);
     }
 
+    @HttpPost(':conversationId/messages')
+    async sendMessage(
+      @Param('conversationId') conversationId: string,
+      @Body() body: { userId: string; content: string; isImage?: boolean }
+    ) {
+      return this.conversationService.sendMessage({
+        conversationId: +conversationId,
+        userId: +body.userId,
+        content: body.content,
+        isImage: body.isImage ?? false,
+      });
+    }
+
+    @HttpPost('/users/:id/message-previews')
+    async postMessagePreviews(@Param('id') id: string) {
+      // 复用 getMessagePreviews 逻辑
+      return this.conversationService.getMessagePreviews(+id);
+    }
+
 }
