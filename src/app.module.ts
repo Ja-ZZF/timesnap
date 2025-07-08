@@ -15,6 +15,8 @@ import { TagModule } from './tag/tag.module';
 import { PostTagModule } from './post_tag/post_tag.module';
 import { ConfigModule } from '@nestjs/config'; // ✅ 导入 ConfigModule
 import { RedisModule } from './redis/redis.module';
+import { ContactModule } from './contact/contact.module';
+import { ChatMessageModule } from './chat_message/chat_message.module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { RedisModule } from './redis/redis.module';
     TagModule,
     PostTagModule,
     RedisModule,
+    ContactModule,
+    ChatMessageModule,
   ],
 })
 export class AppModule {}

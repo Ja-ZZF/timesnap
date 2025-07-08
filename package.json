@@ -30,6 +30,7 @@
     "cache-manager-ioredis": "^2.1.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.0.1",
     "ioredis": "^5.6.1",
     "mysql2": "^3.14.1",
