@@ -10,6 +10,7 @@ import { CreateChatMessageDto } from './dto/create-chat-message.dto';
 import { ChatMessage } from './entities/chat_message.entity';
 import { ChatMessageService } from './chat_message.service';
 import { ChatItem } from './interface/chat-item.interface';
+import { CreateSimpleChatMessageDto } from './dto/create-simple-chat-message.dto';
 
 @Controller('chat-message')
 export class ChatMessageController {
@@ -47,6 +48,23 @@ export class ChatMessageController {
   @Post('create')
   async createMessage(@Body() dto: CreateChatMessageDto): Promise<ChatMessage> {
     return this.chatMessageService.createMessage(dto);
+  }
+
+  //new 新增一条消息for黄煜炜
+  @Post('createSimple')
+  async createSimpleMessage(@Body() dto : CreateSimpleChatMessageDto) : Promise<ChatMessage>{
+    const {contact_id,sender_id,content,isImage} = dto;
+    const message_type = isImage ? 'image' : 'text';
+
+    const newDto : CreateChatMessageDto = {
+      contact_id : Number(contact_id),
+      sender_id : Number(sender_id),
+      content : content,
+      message_type : message_type,
+    }
+
+    return this.chatMessageService.createMessage(newDto);
+    
   }
 
   //5. 根据contactId获取信息
