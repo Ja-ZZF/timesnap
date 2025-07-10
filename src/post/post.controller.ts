@@ -11,6 +11,11 @@ export class PostController {
   findAll(): Promise<PostEntity[]> {
     return this.postService.findAll();
   }
+  
+  @Get('all-ids')
+  getAllIds() : Promise <number[]>{
+    return this.postService.findAllIds();
+  }
 
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<PostEntity> {
