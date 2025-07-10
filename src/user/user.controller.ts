@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, Delete, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  NotFoundException,
+  Query,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 
@@ -11,6 +20,11 @@ export class UserController {
     return this.userService.findAll();
   }
 
+  @Get('user-item')
+  async getUserItem(@Query('userId') userId: number) {
+    return this.userService.getUserItem(Number(userId));
+  }
+  
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<User> {
     const user = await this.userService.findOne(+id);

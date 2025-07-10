@@ -14,6 +14,7 @@ import { CollectService } from '../collect/collect.service';
 import { PostService } from '../post/post.service';
 import { MediaService } from '../media/media.service';
 import { RedisService } from 'src/redis/redis.service';
+import { UserItem } from './interface/user-item.interface';
 
 @Injectable()
 export class UserService {
@@ -75,6 +76,24 @@ export class UserService {
       where: { user_id: In(userIds) },
       select: ['user_id', 'nickname', 'avatar'], // 只选需要的字段
     });
+  }
+
+  async getUserItem(userId: number): Promise<UserItem> {
+    console.log('userId = ',userId);
+    const user = await this.userRepo.findOne({
+      where: { user_id: userId },
+    });
+    console.log(user);
+    if (user) {
+      const userItem: UserItem = {
+        user_id: user.user_id.toString(),
+        avatar: user.avatar,
+        name: user.nickname,
+      };
+      return userItem;
+    } else {
+      throw new NotFoundException('用户未找到');
+    }
   }
 
   async getMinePageInfo(userId: number) {
@@ -244,5 +263,4 @@ export class UserService {
     await this.redisService.set(cacheKey, JSON.stringify(result), 60); // 缓存 60 秒
     return result;
   }
-  
 }
