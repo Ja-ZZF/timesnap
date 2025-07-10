@@ -1,4 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity('user')
 export class User {
@@ -26,9 +31,12 @@ export class User {
   @CreateDateColumn({ type: 'datetime' })
   create_time: Date;
 
-  @Column({type:'int',default:0})
-  followed_count : number;
+  @Column({ type: 'int', default: 0 })
+  followed_count: number;
 
-  @Column({type:'int',default:0})
-  follower_count : number;
+  @Column({ type: 'int', default: 0 })
+  follower_count: number;
+  
+  @Column({ length: 255 })
+  password: string;
 }

@@ -17,6 +17,7 @@ import { ConfigModule } from '@nestjs/config'; // ✅ 导入 ConfigModule
 import { RedisModule } from './redis/redis.module';
 import { ContactModule } from './contact/contact.module';
 import { ChatMessageModule } from './chat_message/chat_message.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ChatMessageModule } from './chat_message/chat_message.module';
     RedisModule,
     ContactModule,
     ChatMessageModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

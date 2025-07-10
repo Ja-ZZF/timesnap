@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
+import { setPasswordDto } from './dto/set-password.dto';
+import { use } from 'passport';
 
 @Controller('users')
 export class UserController {
@@ -39,9 +41,10 @@ export class UserController {
     return this.userService.getMinePageInfo(+id);
   }
 
-  @Post()
-  create(@Body() userData: Partial<User>): Promise<User> {
-    return this.userService.create(userData);
+  @Post('set-password')
+  async setPassword(@Body() body : setPasswordDto){
+    const {userId,password} = body;
+    return this.userService.setPassword(userId,password);
   }
 
   @Delete(':id')

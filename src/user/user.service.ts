@@ -15,6 +15,8 @@ import { PostService } from '../post/post.service';
 import { MediaService } from '../media/media.service';
 import { RedisService } from 'src/redis/redis.service';
 import { UserItem } from './interface/user-item.interface';
+import * as bcrypt from 'bcrypt';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UserService {
@@ -79,7 +81,7 @@ export class UserService {
   }
 
   async getUserItem(userId: number): Promise<UserItem> {
-    console.log('userId = ',userId);
+    console.log('userId = ', userId);
     const user = await this.userRepo.findOne({
       where: { user_id: userId },
     });
@@ -262,5 +264,34 @@ export class UserService {
 
     await this.redisService.set(cacheKey, JSON.stringify(result), 60); // 缓存 60 秒
     return result;
+  }
+
+  async findByEmail(eamil: string): Promise<User | null> {
+    // 你用的phone/email/nickname都可以改为合适字段，这里假设用email登录
+    return this.userRepo.findOne({ where: { email: eamil } });
+  }
+
+  async createUser(data: CreateUserDto): Promise<User> {
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const user = this.userRepo.create({
+      phone: data.phone,
+      email: data.email,
+      nickname: data.nickname,
+      location: data.location || '',
+      gender: data.gender,
+      avatar: data.avatar || '',
+      password: hashedPassword,
+    });
+    return this.userRepo.save(user);
+  }
+
+  // ✅ 设置新密码（会自动加密）
+  async setPassword(userId: number, newPassword: string): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { user_id: userId } });
+    if (!user) throw new NotFoundException('用户不存在');
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    user.password = hashed;
+    await this.userRepo.save(user);
   }
 }
