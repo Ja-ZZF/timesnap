@@ -179,6 +179,7 @@ export class PostService {
     return result;
   }
 
+  //查询post的基本数据
   async getPostSimple(postIds: number[], userId: number): Promise<any[]> {
     if (!postIds || postIds.length === 0) return [];
 
@@ -228,6 +229,7 @@ export class PostService {
     return result;
   }
 
+  //查询关注者的post
   async getFollowedPostSimple(userId: number): Promise<any[]> {
     const followedUserIds = await this.followService.findFollowedList(userId);
 
@@ -236,12 +238,13 @@ export class PostService {
     return this.getPostSimple(followedPostIds, userId);
   }
 
-  async findAllIds() : Promise<number[]>{
+  //查询所有post的Id
+  async findAllIds(): Promise<number[]> {
     const result = await this.postRepo.find({
-      select:['post_id']
+      select: ['post_id'],
     });
 
-    const Ids = result.map(row=>row.post_id);
+    const Ids = result.map((row) => row.post_id);
     return Ids;
   }
 }

@@ -17,15 +17,6 @@ export class PostController {
     return this.postService.findAllIds();
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<PostEntity> {
-    const post = await this.postService.findOne(+id);
-    if (!post) {
-      throw new NotFoundException(`Post ${id} not found`);
-    }
-    return post;
-  }
-  
   @Get(':postId/detail')
   async getPostDetail(
     @Param('postId', ParseIntPipe) postId: number,
