@@ -18,6 +18,7 @@ import { RedisModule } from './redis/redis.module';
 import { ContactModule } from './contact/contact.module';
 import { ChatMessageModule } from './chat_message/chat_message.module';
 import { AuthModule } from './auth/auth.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { AuthModule } from './auth/auth.module';
     ContactModule,
     ChatMessageModule,
     AuthModule,
+    UploadModule,
   ],
 })
 export class AppModule {}
