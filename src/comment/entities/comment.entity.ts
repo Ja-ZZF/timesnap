@@ -19,7 +19,7 @@ export class Comment {
   @Column({ type: 'int', nullable: true })
   parent_comment_id: number | null; //父评论id
 
-  @Column({ type: 'int' }) //评论发布者id
+  @Column() //评论发布者id
   user_id: number;
 
   @Column({ type: 'text' })

@@ -13,7 +13,6 @@ import {
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { setPasswordDto } from './dto/set-password.dto';
-import { use } from 'passport';
 import { CurrentUser } from 'src/common/user.decorator';
 import { AuthGuard } from '@nestjs/passport';
 

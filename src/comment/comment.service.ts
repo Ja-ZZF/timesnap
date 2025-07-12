@@ -250,6 +250,9 @@ export class CommentService {
       this.likeService.getLikedCommentIds(self_id, commentIds), // Set<number>
     ]);
 
+    console.log('userMap:', userMap);
+
+
     // 4. 递归构造树形结构函数
     const buildTree = (parentId: number | null): CommentSimple[] => {
       const children = parentMap.get(parentId) || [];
