@@ -4,10 +4,10 @@ import { User } from '../../user/entities/user.entity';
 
 @Entity({ name: 'post' })
 export class Post {
-  @PrimaryGeneratedColumn({type:'bigint'})
+  @PrimaryGeneratedColumn({type:'int'})
   post_id: number;
 
-  @Column({type : 'bigint'})
+  @Column({type : 'int'})
   user_id: number;
 
   @ManyToOne(() => User)
@@ -34,7 +34,6 @@ export class Post {
 
   @Column({type:'int',default:0})
   comment_count : number;
-
 
   @Column({ type: 'enum', enum: ['Public', 'FansOnly', 'MutualOnly', 'Private'], default: 'Public' })
   view_permission: 'Public' | 'FansOnly' | 'MutualOnly' | 'Private';

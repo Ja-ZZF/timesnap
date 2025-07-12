@@ -4,12 +4,12 @@ import { AuthGuard } from '@nestjs/passport';
 import { privateDecrypt } from 'crypto';
 import { UserService } from 'src/user/user.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { RegisterRequest } from './dto/register-requester.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private userSerivce : UserService
 ) {}
 
   // 登录接口，使用本地策略验证
@@ -20,7 +20,7 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() body : CreateUserDto){
-    return this.userSerivce.createUser(body);
+  async register(@Body() body : RegisterRequest){
+    return this.authService.register(body);
   }
 }

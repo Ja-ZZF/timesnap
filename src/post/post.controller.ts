@@ -1,7 +1,22 @@
 // src/post/post.controller.ts
-import { Controller, Get, Post as HttpPost, Put, Delete, Param, Body, NotFoundException, ParseIntPipe, Query, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post as HttpPost,
+  Put,
+  Delete,
+  Param,
+  Body,
+  NotFoundException,
+  ParseIntPipe,
+  Query,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { PostService } from './post.service';
 import { Post as PostEntity } from './entities/post.entity';
+import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from 'src/common/user.decorator';
 
 @Controller('posts')
 export class PostController {
@@ -11,58 +26,22 @@ export class PostController {
   findAll(): Promise<PostEntity[]> {
     return this.postService.findAll();
   }
-  
-  @Get('all-ids')
-  getAllIds() : Promise <number[]>{
-    return this.postService.findAllIds();
-  }
 
-  @Get(':postId/detail')
-  async getPostDetail(
-    @Param('postId', ParseIntPipe) postId: number,
-    @Query('userId', ParseIntPipe) userId: number
+  @UseGuards(AuthGuard('jwt'))
+  @Get('simple')
+  async getSimple(
+    @CurrentUser('user_id') self_id: number,
+    @Query('post_id') post_id: number,
   ) {
-    return this.postService.getPostDetail(postId, userId);
+    return this.postService.getPostSimple(self_id, post_id);
   }
 
-
-  @Get('user/:userId')
-  findByUserId(@Param('userId',ParseIntPipe) userId : number){
-    return this.postService.findByUserId(userId);
-  }
-
-  @Get('follow/:userId')
-  getfollowedPostSimple(@Param('userId') userId :number){
-    return this.postService.getFollowedPostSimple(userId);
-  }
-
-  @Post('simple')
-  async getPostSimple(
-    @Body('post_ids') postIds : number[],
-    @Body('userId') userId : number,
-  ):Promise<any[]>{
-    return this.postService.getPostSimple(postIds,userId);
-  }
-
-
-  @HttpPost()
-  create(@Body() postData: Partial<PostEntity>): Promise<PostEntity> {
-    return this.postService.create(postData);
-  }
-
-  @Put(':id')
-  async update(@Param('id') id: string, @Body() postData: Partial<PostEntity>): Promise<PostEntity> {
-    //return this.postService.update(+id, postData);
-    const post = await this.postService.update(+id,postData);
-    if(!post){
-        throw new NotFoundException(`Post ${id} not found`);
-    }else{
-        return post;
-    }
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string): Promise<void> {
-    return this.postService.remove(+id);
+  @UseGuards(AuthGuard('jwt'))
+  @Get('detail')
+  async getDetail(
+    @CurrentUser('user_id') self_id: number,
+    @Query('post_id') post_id: number,
+  ) {
+    return this.postService.getPostDetail(self_id, post_id);
   }
 }

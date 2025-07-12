@@ -16,6 +16,16 @@ import { RedisService } from 'src/redis/redis.service';
 import { LikeService } from 'src/like/like.service';
 import { FollowService } from 'src/follow/follow.service';
 import * as crypto from 'crypto';
+import { LikeStats } from 'src/like/dto/like-stats.dto';
+import { PostSimple } from './dto/post-simple.dto';
+import { PostDetail } from './dto/post-detail.dto';
+import { Permission } from 'src/dto/permission.dto';
+import { MediaSimple } from 'src/media/dto/media-simple.dto';
+import { CollectStats } from 'src/collect/dto/collect-stats.dto';
+import { CollectService } from 'src/collect/collect.service';
+import { TagSimple } from 'src/tag/dto/tag-simple.dto';
+import { PostTagService } from 'src/post_tag/post_tag.service';
+import { CommentSimple } from 'src/comment/dto/comment-simple.dto';
 
 @Injectable()
 export class PostService {
@@ -28,7 +38,8 @@ export class PostService {
     private readonly userService: UserService,
     private readonly mediaService: MediaService,
     private readonly likeService: LikeService,
-    private readonly followService: FollowService,
+    private readonly collectService : CollectService,
+    private readonly postTagService : PostTagService,
     private readonly redisService: RedisService, // ✅ 注入 Redis
   ) {}
 
@@ -92,159 +103,97 @@ export class PostService {
     await this.postRepo.delete(id);
   }
 
-  //查询post数据
-  async getPostDetail(postId: number, userId: number): Promise<any> {
-    const cacheKey = `post:detail:${postId}:user:${userId}`;
-    const cached = await this.redisService.get(cacheKey);
-    if (cached) {
-      console.log('缓存命中');
-      return JSON.parse(cached);
-    } else {
-      console.log('缓存未命中');
+  //查询post简单数据
+  async getPostSimple(self_id: number, post_id: number) {
+    const post = await this.postRepo.findOne({
+      where: { post_id: post_id },
+    });
+    if (!post) {
+      throw new NotFoundException('笔记未找到');
     }
-
-    // 原始逻辑（查询数据库）
-    const postResult = await this.dataSource.query(
-      `SELECT * FROM post WHERE post_id = ?`,
-      [postId],
-    );
-
-    if (postResult.length === 0) {
-      throw new NotFoundException('Post Not Found');
-    }
-
-    const post = postResult[0];
-
-    const author = await this.userService.getBasicUserInfo(post.user_id); // ⚠️这里改回 post.user_id
-    const medias = await this.mediaService.findByOwner('Post', postId);
-    const commentsTree =
-      await this.commentService.getCommentsWithUserInfoAndMediasByPostId(
-        postId,
-      );
-
-    const likeResult = await this.dataSource.query(
-      `
-    SELECT 1 FROM \`like\`
-    WHERE target_type = 'Post' AND target_id = ? AND user_id = ? LIMIT 1
-  `,
-      [postId, userId],
-    );
-
-    const collectResult = await this.dataSource.query(
-      `
-    SELECT 1 FROM \`collect\`
-    WHERE post_id = ? AND user_id = ? LIMIT 1
-  `,
-      [postId, userId],
-    );
-
-    const tags = await this.dataSource.query(
-      `
-    SELECT t.tag_id, t.name
-    FROM tag t
-    INNER JOIN post_tag pt ON t.tag_id = pt.tag_id
-    WHERE pt.post_id = ?
-  `,
-      [postId],
-    );
-
-    const result = {
-      post: {
-        post_id: Number(post.post_id),
-        publish_time: post.publish_time,
-        title: post.title,
-        content: post.content,
-      },
-      user: author,
-      permission: {
-        view_permission: post.view_permission,
-        comment_permission: post.comment_permission,
-      },
-      stats: {
-        like_count: post.like_count,
-        collect_count: post.collect_count,
-        browse_count: post.browse_count,
-        comment_count: post.comment_count,
-        isLiked: likeResult.length > 0,
-        isCollected: collectResult.length > 0,
-      },
-      medias,
-      tags,
-      comments: commentsTree,
+    const publisher = await this.userService.getSimple(self_id, post.user_id);
+    const likeStats: LikeStats = {
+      like_count: post.like_count,
+      is_liked: await this.likeService.isLiked(self_id, 'Post', post_id),
     };
 
-    // ✅ 缓存到 Redis，60 秒过期（可调）
-    await this.redisService.set(cacheKey, JSON.stringify(result), 60);
+    const postSimple: PostSimple = {
+      post_id: post_id,
+      title: post.title,
+      publisher: publisher,
+      like_stats: likeStats,
+      cover_url: post.cover_url,
+    };
 
-    return result;
+    return postSimple;
   }
 
-  //查询post的基本数据
-  async getPostSimple(postIds: number[], userId: number): Promise<any[]> {
-    if (!postIds || postIds.length === 0) return [];
+  //查询post具体数据
+  async getPostDetail(self_id: number, post_id: number): Promise<PostDetail> {
+    const postSimple = await this.getPostSimple(self_id,post_id);
 
-    const postIdsKey = crypto
-      .createHash('md5')
-      .update(postIds.join(','))
-      .digest('hex');
-    const cacheKey = `post:simple:user:${userId}:posts:${postIdsKey}`;
+    const post = await this.postRepo.findOne({
+      where: { post_id: post_id },
+    });
 
-    const cached = await this.redisService.get(cacheKey);
-    if (cached) {
-      console.log(`[Redis] 命中 ${cacheKey}`);
-      return JSON.parse(cached);
+    if (!post) {
+      throw new NotFoundException('笔记未找到');
     }
 
-    console.log(`[Redis] 未命中 ${cacheKey}，查询数据库`);
-
-    const posts = await this.postRepo.find({
-      where: { post_id: In(postIds) },
-      relations: ['user'],
-      select: [
-        'post_id',
-        'content',
-        'like_count',
-        'user',
-        'title',
-        'cover_url',
-      ],
-    });
-
-    const likedSet = await this.likeService.getUserLikedPostIds(
-      userId,
-      postIds,
+    const medias: MediaSimple[] = await this.mediaService.getSimple(
+      'Post',
+      post_id,
     );
 
-    const result = posts.map((post) => ({
-      id: post.post_id,
-      image: post.cover_url || null,
-      title: post.title,
-      avatar: post.user.avatar,
-      username: post.user.nickname,
-      likes: post.like_count,
-      isLiked: likedSet.has(Number(post.post_id)),
-    }));
+    const permission: Permission = {
+      view_permission: post.view_permission,
+      comment_permission: post.comment_permission,
+    };
 
-    await this.redisService.set(cacheKey, JSON.stringify(result), 300); // 有效期 5 分钟
-    return result;
+    const collectStats : CollectStats = {
+      collect_count : post.collect_count,
+      is_collected : await this.collectService.isCollected(self_id,post_id),
+    }
+
+    const tags : TagSimple[] = await this.postTagService.getSimple(post_id);
+    const comments : CommentSimple[] = await this.commentService.getPostCommentSimple(self_id,post_id);
+
+    const postDetail : PostDetail = {
+      post_simple : postSimple,
+      content : post.content,
+      medias : medias,
+      permission : permission,
+      publish_time : post.publish_time,
+      collect_stats : collectStats,
+      browse_count : post.browse_count,
+      comment_count : post.comment_count,
+      tags : tags,
+      comments : comments,
+    };
+
+    return postDetail;
+
   }
 
-  //查询关注者的post
-  async getFollowedPostSimple(userId: number): Promise<any[]> {
-    const followedUserIds = await this.followService.findFollowedList(userId);
+  //获取用户的所有的post的点赞和
+  async getLikeCount(user_id: number): Promise<number> {
+    const result = await this.postRepo
+      .createQueryBuilder('post')
+      .select('SUM(post.like_count)', 'like_count_sum')
+      .where('post.user_id = :user_id', { user_id })
+      .getRawOne();
 
-    const followedPostIds = await this.findByUserIds(followedUserIds);
-
-    return this.getPostSimple(followedPostIds, userId);
+    return Number(result.like_count_sum) || 0; // 防止 null
   }
 
-  //查询所有post的Id
-  async findAllIds(): Promise<number[]> {
-    const result = await this.postRepo.find({
-      select: ['post_id'],
-    });
+  //获取用户的所有的post的收藏和
+  async getCollectCount(user_id: number): Promise<number> {
+    const result = await this.postRepo
+      .createQueryBuilder('post')
+      .select('SUM(post.collect_count)', 'collect_count_sum')
+      .where('post.user_id = :user_id', { user_id })
+      .getRawOne();
 
-    const Ids = result.map((row) => row.post_id);
-    return Ids;
+    return Number(result.collect_count_sum) || 0; // 防止 null
   }
 }

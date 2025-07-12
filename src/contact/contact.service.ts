@@ -5,30 +5,16 @@ import { Contact } from './entities/contact.entity';
 import { Repository } from 'typeorm';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { User } from 'src/user/entities/user.entity';
+import { ContactSimple } from './dto/contact-simple.dto';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class ContactService {
   constructor(
     @InjectRepository(Contact)
     private contactRepo: Repository<Contact>,
+    private readonly userService: UserService,
   ) {}
-
-  // 1. 获取所有联系人（联查 user1、user2、lastMessage）
-  async findAll(): Promise<Contact[]> {
-    return this.contactRepo.find({
-      relations: ['user1', 'user2', 'lastMessage'],
-      order: { updated_at: 'DESC' },
-    });
-  }
-
-  // 2. 获取指定用户的所有联系人（联查）
-  async findAllByUserId(userId: number): Promise<Contact[]> {
-    return this.contactRepo.find({
-      where: [{ user1: { user_id: userId } }, { user2: { user_id: userId } }],
-      relations: ['user1', 'user2', 'lastMessage'],
-      order: { updated_at: 'DESC' },
-    });
-  }
 
   async createContact(dto: CreateContactDto): Promise<Contact> {
     let { user_id_1, user_id_2 } = dto;
@@ -67,27 +53,30 @@ export class ContactService {
     return this.contactRepo.save(contact);
   }
 
-  async getMessagePreviews(userId: number): Promise<PreviewItem[]> {
+  async getSimple(self_id: number): Promise<ContactSimple[]> {
     const contacts = await this.contactRepo.find({
-      where: [{ user1: { user_id: userId } }, { user2: { user_id: userId } }],
+      where: [{ user1: { user_id: self_id } }, { user2: { user_id: self_id } }],
       relations: ['user1', 'user2', 'lastMessage'],
       order: { updated_at: 'DESC' },
     });
 
-    const result: PreviewItem[] = contacts.map((contact) => {
-      // 判断会话中哪个是“对方”
-      const isUser1 = contact.user1.user_id === userId;
-      const otherUser = isUser1 ? contact.user1 : contact.user2;
+    const results: ContactSimple[] = [];
 
-      return {
-        avatar: otherUser.avatar,
-        name: otherUser.nickname,
-        message: contact.lastMessage?.content || '',
-        conversationId: contact.contact_id.toString(),
-        friendId : otherUser.user_id.toString(),
-      };
-    });
+    for (const contact of contacts) {
+      const isUser1 = contact.user1.user_id === self_id;
+      const friend = isUser1 ? contact.user2 : contact.user1;
 
-    return result;
+      const friendSimple = await this.userService.getSimple(
+        self_id,
+        friend.user_id,
+      );
+
+      results.push({
+        contact_id: contact.contact_id,
+        friend: friendSimple,
+        latest_message: contact.lastMessage?.content || '',
+      });
+    }
+    return results;
   }
 }

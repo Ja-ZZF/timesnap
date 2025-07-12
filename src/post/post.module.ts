@@ -8,6 +8,9 @@ import { UserModule } from '../user/user.module';
 import { MediaModule } from '../media/media.module';
 import { FollowModule } from 'src/follow/follow.module';
 import { LikeModule } from 'src/like/like.module';
+import { CollectService } from 'src/collect/collect.service';
+import { PostTagModule } from 'src/post_tag/post_tag.module';
+import { CollectModule } from 'src/collect/collect.module';
 
 @Module({
   imports: [
@@ -17,6 +20,9 @@ import { LikeModule } from 'src/like/like.module';
     MediaModule,
     FollowModule,
     LikeModule,
+    CollectModule,
+    PostTagModule,
+    
   ],
   providers: [PostService],
   controllers: [PostController],

@@ -9,5 +9,6 @@ import { PostTagController } from './post_tag.controller';
   imports: [TypeOrmModule.forFeature([PostTag])],
   controllers: [PostTagController],
   providers: [PostTagService],
+  exports : [PostTagService],
 })
 export class PostTagModule {}

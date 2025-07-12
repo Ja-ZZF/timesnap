@@ -7,12 +7,14 @@ import { Post } from '../post/entities/post.entity';
 import { User } from '../user/entities/user.entity';
 import { UserModule } from '../user/user.module';
 import { MediaModule } from '../media/media.module';
+import { LikeModule } from 'src/like/like.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Comment, Post, User]),
     forwardRef(() => UserModule),
     MediaModule,
+    LikeModule,
   ],
   controllers: [CommentController],
   providers: [CommentService],

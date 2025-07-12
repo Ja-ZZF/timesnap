@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Media } from './entities/media.entity';
+import { MediaSimple } from './dto/media-simple.dto';
 
 @Injectable()
 export class MediaService {
@@ -14,7 +15,6 @@ export class MediaService {
     return this.mediaRepo.find();
   }
 
-
   create(media: Partial<Media>): Promise<Media> {
     return this.mediaRepo.save(media);
   }
@@ -23,14 +23,20 @@ export class MediaService {
     return this.mediaRepo.delete(id).then(() => {});
   }
 
-  async findUrlsByOwner(owner_type:'Post'| 'Comment'|'Draft',owner_id:number):Promise<string[]>{
+  async findUrlsByOwner(
+    owner_type: 'Post' | 'Comment' | 'Draft',
+    owner_id: number,
+  ): Promise<string[]> {
     const medias = await this.mediaRepo.find({
-      where:{owner_type,owner_id},
+      where: { owner_type, owner_id },
     });
-    return medias.map(m=>m.url);
+    return medias.map((m) => m.url);
   }
 
-  async findByOwner(ownerType: 'Post' | 'Comment' | 'Draft', ownerId: number): Promise<{ media_id: number; url: string }[]> {
+  async findByOwner(
+    ownerType: 'Post' | 'Comment' | 'Draft',
+    ownerId: number,
+  ): Promise<{ media_id: number; url: string }[]> {
     return this.mediaRepo.find({
       select: ['media_id', 'url'],
       where: {
@@ -40,7 +46,48 @@ export class MediaService {
     });
   }
 
+  async getSimple(
+    owner_type: 'Post' | 'Comment',
+    owner_id: number,
+  ): Promise<MediaSimple[]> {
+    const medias = await this.mediaRepo.find({
+      where: {
+        owner_type: owner_type,
+        owner_id: owner_id,
+      },
+    });
 
+    const mediaSimple: MediaSimple[] = medias.map((media) => ({
+      media_id: media.media_id,
+      url: media.url,
+    }));
 
-  
+    return mediaSimple;
+  }
+
+  async getSimpleBatchForComment(
+    commentIds: number[],
+  ): Promise<Map<number, MediaSimple[]>> {
+    if (commentIds.length === 0) return new Map();
+
+    const medias = await this.mediaRepo.find({
+      where: {
+        owner_type: 'Comment',
+        owner_id: In(commentIds),
+      },
+    });
+
+    const resultMap = new Map<number, MediaSimple[]>();
+
+    for (const media of medias) {
+      const list = resultMap.get(media.owner_id) ?? [];
+      list.push({
+        media_id: media.media_id,
+        url: media.url,
+      });
+      resultMap.set(media.owner_id, list);
+    }
+
+    return resultMap;
+  }
 }

@@ -7,11 +7,15 @@ import {
   Delete,
   NotFoundException,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 import { setPasswordDto } from './dto/set-password.dto';
 import { use } from 'passport';
+import { CurrentUser } from 'src/common/user.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('users')
 export class UserController {
@@ -22,9 +26,16 @@ export class UserController {
     return this.userService.findAll();
   }
 
-  @Get('user-item')
-  async getUserItem(@Query('userId') userId: number) {
-    return this.userService.getUserItem(Number(userId));
+  @UseGuards(AuthGuard('jwt'))
+  @Get('simple')
+  async getSimple(@CurrentUser('user_id') self_id : number ,@Query('target_id') target_id : number){
+    return this.userService.getSimple(self_id,target_id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('detail')
+  async getDetail(@CurrentUser('user_id') self_id : number,@Query('target_id') target_id : number){
+    return this.userService.getDetail(self_id,target_id);
   }
   
   @Get(':id')

@@ -4,10 +4,11 @@ import { ContactController } from './contact.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Contact } from './entities/contact.entity';
 import { User } from 'src/user/entities/user.entity';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Contact, User])],
+  imports: [TypeOrmModule.forFeature([Contact, User]), UserModule],
   providers: [ContactService],
-  controllers: [ContactController]
+  controllers: [ContactController],
 })
 export class ContactModule {}

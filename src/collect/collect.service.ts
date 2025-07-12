@@ -44,6 +44,12 @@ export class CollectService {
     throw error;
   }
 }
+  async isCollected(self_id : number,post_id : number):Promise<boolean>{
+    const exists = await this.collectRepo.exists({
+      where:{post_id : post_id},
+    });
+    return exists;
+  }
 
 
 

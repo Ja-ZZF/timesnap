@@ -5,7 +5,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, NumericType, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { UserBasicInfo } from './dto/user-basic-info.dto';
 import { FollowService } from '../follow/follow.service';
@@ -17,6 +17,9 @@ import { RedisService } from 'src/redis/redis.service';
 import { UserItem } from './interface/user-item.interface';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UserSimple } from './dto/user-simple.dto';
+import { UserDetail } from './dto/user-detail.dto';
+import { FollowStats } from 'src/follow/dto/follow-stats.dto';
 
 @Injectable()
 export class UserService {
@@ -271,20 +274,6 @@ export class UserService {
     return this.userRepo.findOne({ where: { email: eamil } });
   }
 
-  async createUser(data: CreateUserDto): Promise<User> {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    const user = this.userRepo.create({
-      phone: data.phone,
-      email: data.email,
-      nickname: data.nickname,
-      location: data.location || '',
-      gender: data.gender,
-      avatar: data.avatar || '',
-      password: hashedPassword,
-    });
-    return this.userRepo.save(user);
-  }
-
   // ✅ 设置新密码（会自动加密）
   async setPassword(userId: number, newPassword: string): Promise<void> {
     const user = await this.userRepo.findOne({ where: { user_id: userId } });
@@ -293,5 +282,119 @@ export class UserService {
     const hashed = await bcrypt.hash(newPassword, 10);
     user.password = hashed;
     await this.userRepo.save(user);
+  }
+
+  //获取用户简单信息
+  async getSimple(self_id: number, target_id: number): Promise<UserSimple> {
+    // console.log('self_id = ', self_id);
+    // console.log('target_id = ', target_id);
+
+    const targetUser = await this.userRepo.findOne({
+      where: { user_id: target_id },
+      select: ['user_id', 'avatar', 'nickname', 'email'],
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('用户未找到');
+    }
+
+    const isFollowed = await this.followService.isFollowed(self_id, target_id);
+
+    const userSimple: UserSimple = {
+      user_id: targetUser.user_id,
+      avatar: targetUser.avatar,
+      nickname: targetUser.nickname,
+      email: targetUser.email,
+      is_followed: isFollowed,
+    };
+
+    return userSimple;
+  }
+
+  //批量获取用户简单信息
+  async getSimpleBatch(self_id: number, target_ids: number[]): Promise<Map<number, UserSimple>> {
+  if (target_ids.length === 0) return new Map();
+
+  // 1. 批量获取用户基本信息
+  const users = await this.userRepo.find({
+    where: target_ids.map(id => ({ user_id: id })),
+    select: ['user_id', 'avatar', 'nickname', 'email'],
+  });
+
+  // 2. 批量查询 follow 表（self_id -> target_ids）
+  const follows = await this.followService.isFollowedBatch(self_id, target_ids);
+  const followedSet = new Set(follows.map(f => f.followed_user_id));
+
+  // 3. 构造 Map<user_id, UserSimple>
+  const result = new Map<number, UserSimple>();
+  for (const user of users) {
+    result.set(user.user_id, {
+      user_id: user.user_id,
+      avatar: user.avatar,
+      nickname: user.nickname,
+      email: user.email,
+      is_followed: followedSet.has(user.user_id),
+    });
+  }
+
+  return result;
+}
+
+
+  //获取用户详细信息
+  async getDetail(self_id: number, target_id: number): Promise<UserDetail> {
+    const targetUser = await this.userRepo.findOne({
+      where: { user_id: target_id },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('用户未找到');
+    }
+
+    const isFollowed = await this.followService.isFollowed(self_id, target_id);
+
+    const userSimple: UserSimple = {
+      user_id: targetUser.user_id,
+      avatar: targetUser.avatar,
+      nickname: targetUser.nickname,
+      email: targetUser.email,
+      is_followed: isFollowed,
+    };
+
+    const likeCount = await this.postService.getLikeCount(target_id);
+    const collectCount = await this.postService.getCollectCount(target_id);
+
+    const followStats: FollowStats = {
+      followee_count: targetUser.followed_count,
+      follower_count: targetUser.follower_count,
+    };
+
+    const userDetail: UserDetail = {
+      user_simple: userSimple,
+      introduction: '没有简介',
+      follow_stats: followStats,
+      like_count: likeCount,
+      collect_count: collectCount,
+    };
+
+    return userDetail;
+  }
+
+  //创建新用户
+  async createUser(data: {
+    email: string;
+    password: string;
+    nickname: string;
+  }): Promise<User> {
+    const user = this.userRepo.create({
+      email: data.email,
+      password: data.password,
+      nickname: data.nickname,
+      phone: '', // 可设为空或默认值
+      location: '',
+      gender: 'Other',
+      avatar: '',
+    });
+    return this.userRepo.save(user);
   }
 }

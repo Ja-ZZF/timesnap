@@ -8,13 +8,11 @@ export class ChatMessage {
   @PrimaryGeneratedColumn('increment')
   chat_message_id: number;
 
-  @ManyToOne(() => Contact, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'contact_id' })
-  contact: Contact;
+  @Column({type : 'int'})
+  contact_id : number;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'sender_id' })
-  sender: User;
+  @Column({type : 'int'})
+  sender_id : number
 
   @Column({ type: 'text' })
   content: string;

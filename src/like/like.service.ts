@@ -24,53 +24,60 @@ export class LikeService {
     return this.likeRepo.find();
   }
 
-  async toggleLike(userId : number , targetType:'Post' | 'Comment', targetId : number): Promise<boolean>{
+  async toggleLike(
+    userId: number,
+    targetType: 'Post' | 'Comment',
+    targetId: number,
+  ): Promise<boolean> {
     const existing = await this.likeRepo.findOne({
-      where:{user_id:userId,target_type:targetType,target_id:targetId},
+      where: { user_id: userId, target_type: targetType, target_id: targetId },
     });
 
-    if(existing){
+    if (existing) {
       await this.likeRepo.remove(existing);
       return false;
-    }else{
-      const like = this.likeRepo.create({user_id : userId,target_type:targetType,target_id:targetId});
+    } else {
+      const like = this.likeRepo.create({
+        user_id: userId,
+        target_type: targetType,
+        target_id: targetId,
+      });
       await this.likeRepo.save(like);
       return true;
     }
   }
 
-    async getUserLikedPostIds(userId: number, postIds: number[]): Promise<Set<number>> {
-    if (!postIds || postIds.length === 0) return new Set();
-
-    const likes = await this.likeRepo.find({
+  async isLiked(
+    user_id: number,
+    target_type: 'Post' | 'Comment',
+    target_id: number,
+  ): Promise<boolean> {
+    const exists = await this.likeRepo.exists({
       where: {
-        user_id: userId,
-        target_type: 'Post',
-        target_id: In(postIds),
+        user_id: user_id,
+        target_type: target_type,
+        target_id: target_id,
       },
-      select: ['target_id'],
     });
 
-    //console.log(likes);
-
-    return new Set(likes.map(like => like.target_id));
+    return exists;
   }
 
-  async getUserLikedCommentIds(userId: number, commentIds: number[]): Promise<Set<number>> {
-    if (!commentIds || commentIds.length === 0) return new Set();
+  async getLikedCommentIds(
+    self_id: number,
+    comment_ids: number[],
+  ): Promise<Set<number>> {
+    if (comment_ids.length === 0) return new Set();
 
-    const likes = await this.likeRepo.find({
+    const liked = await this.likeRepo.find({
       where: {
-        user_id: userId,
+        user_id: self_id,
         target_type: 'Comment',
-        target_id: In(commentIds),
+        target_id: In(comment_ids),
       },
       select: ['target_id'],
     });
 
-    //console.log(likes);
-
-    return new Set(likes.map(like => like.target_id));
+    return new Set(liked.map((like) => like.target_id));
   }
-
 }

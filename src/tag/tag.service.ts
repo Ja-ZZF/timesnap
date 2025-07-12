@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tag } from './entities/tag.entity';
+import { TagSimple } from './dto/tag-simple.dto';
 
 @Injectable()
 export class TagService {
@@ -27,4 +28,5 @@ export class TagService {
   remove(id: number) {
     return this.tagRepo.delete(id);
   }
+
 }
