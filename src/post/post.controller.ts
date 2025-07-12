@@ -22,18 +22,13 @@ import { CurrentUser } from 'src/common/user.decorator';
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
-  @Get()
-  findAll(): Promise<PostEntity[]> {
-    return this.postService.findAll();
-  }
-
   @UseGuards(AuthGuard('jwt'))
-  @Get('simple')
+  @Post('simple')
   async getSimple(
     @CurrentUser('user_id') self_id: number,
-    @Query('post_id') post_id: number,
+    @Body('post_ids') post_ids: number[],
   ) {
-    return this.postService.getPostSimple(self_id, post_id);
+    return this.postService.getPostsSimple(self_id, post_ids);
   }
 
   @UseGuards(AuthGuard('jwt'))

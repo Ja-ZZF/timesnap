@@ -14,7 +14,6 @@ import { CollectService } from '../collect/collect.service';
 import { PostService } from '../post/post.service';
 import { MediaService } from '../media/media.service';
 import { RedisService } from 'src/redis/redis.service';
-import { UserItem } from './interface/user-item.interface';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserSimple } from './dto/user-simple.dto';
@@ -83,191 +82,138 @@ export class UserService {
     });
   }
 
-  async getUserItem(userId: number): Promise<UserItem> {
-    console.log('userId = ', userId);
-    const user = await this.userRepo.findOne({
-      where: { user_id: userId },
-    });
-    console.log(user);
-    if (user) {
-      const userItem: UserItem = {
-        user_id: user.user_id.toString(),
-        avatar: user.avatar,
-        name: user.nickname,
-      };
-      return userItem;
-    } else {
-      throw new NotFoundException('用户未找到');
-    }
-  }
 
-  async getMinePageInfo(userId: number) {
-    const cacheKey = `user:minepage:${userId}`;
-    const cached = await this.redisService.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+  // // 我的发布
+  // async getMyPosts(userId: number) {
+  //   const cacheKey = `user:myposts:${userId}`;
+  //   const cached = await this.redisService.get(cacheKey);
+  //   if (cached) return JSON.parse(cached);
 
-    const user = await this.userRepo.findOne({ where: { user_id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+  //   const posts = await this.postService.findByUserId(userId);
+  //   const result: {
+  //     id: number;
+  //     image: string | null;
+  //     title: string;
+  //     avatar: string;
+  //     username: string;
+  //     likes: number;
+  //     isLiked: boolean;
+  //   }[] = [];
 
-    const followers = await this.followService.findFollowers(userId);
-    const followees = await this.followService.findFollowings(userId);
-    const likes = await this.likeService.findAll();
-    const like_count = likes.filter(
-      (like) =>
-        like.target_type === 'Post' &&
-        like.target_id &&
-        like.user_id === userId,
-    ).length;
-    const collects = await this.collectService.findByUser(userId);
+  //   for (const post of posts) {
+  //     const medias = await this.mediaService.findByOwner('Post', post.post_id);
+  //     const image = medias.length > 0 ? medias[0].url : null;
+  //     const user = await this.getBasicUserInfo(post.user_id);
+  //     const likes = post.like_count || 0;
 
-    const result = {
-      user_id: user.user_id,
-      avatar: user.avatar,
-      name: user.nickname,
-      introduction: user.location || '',
-      follower_count: followers.length,
-      followee_count: followees.length,
-      like_count: like_count,
-      collect_count: collects.length,
-    };
+  //     result.push({
+  //       id: post.post_id,
+  //       image,
+  //       title: post.title,
+  //       avatar: user.avatar,
+  //       username: user.nickname,
+  //       likes,
+  //       isLiked: false,
+  //     });
+  //   }
 
-    // ✅ 写入缓存，过期 2 分钟
-    await this.redisService.set(cacheKey, JSON.stringify(result), 120);
+  //   await this.redisService.set(cacheKey, JSON.stringify(result), 60); // 缓存 60 秒
+  //   return result;
+  // }
 
-    return result;
-  }
+  // // 我的收藏
+  // async getMyCollections(userId: number) {
+  //   const cacheKey = `user:mycollections:${userId}`;
+  //   const cached = await this.redisService.get(cacheKey);
+  //   if (cached) return JSON.parse(cached);
 
-  // 我的发布
-  async getMyPosts(userId: number) {
-    const cacheKey = `user:myposts:${userId}`;
-    const cached = await this.redisService.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+  //   const collects = await this.collectService.findByUser(userId);
+  //   const allLikes = await this.likeService.findAll(); // ✅ 提前查，避免每个 post 重复查
+  //   const result: {
+  //     id: number;
+  //     image: string | null;
+  //     title: string;
+  //     avatar: string;
+  //     username: string;
+  //     likes: number;
+  //     isLiked: boolean;
+  //   }[] = [];
 
-    const posts = await this.postService.findByUserId(userId);
-    const result: {
-      id: number;
-      image: string | null;
-      title: string;
-      avatar: string;
-      username: string;
-      likes: number;
-      isLiked: boolean;
-    }[] = [];
+  //   for (const collect of collects) {
+  //     const post = await this.postService.findOne(collect.post_id);
+  //     if (!post) continue;
 
-    for (const post of posts) {
-      const medias = await this.mediaService.findByOwner('Post', post.post_id);
-      const image = medias.length > 0 ? medias[0].url : null;
-      const user = await this.getBasicUserInfo(post.user_id);
-      const likes = post.like_count || 0;
+  //     const medias = await this.mediaService.findByOwner('Post', post.post_id);
+  //     const image = medias.length > 0 ? medias[0].url : null;
+  //     const user = await this.getBasicUserInfo(post.user_id);
+  //     const likes = post.like_count || 0;
 
-      result.push({
-        id: post.post_id,
-        image,
-        title: post.title,
-        avatar: user.avatar,
-        username: user.nickname,
-        likes,
-        isLiked: false,
-      });
-    }
+  //     const isLiked = allLikes.some(
+  //       (l) =>
+  //         l.user_id === userId &&
+  //         l.target_type === 'Post' &&
+  //         l.target_id === post.post_id,
+  //     );
 
-    await this.redisService.set(cacheKey, JSON.stringify(result), 60); // 缓存 60 秒
-    return result;
-  }
+  //     result.push({
+  //       id: post.post_id,
+  //       image,
+  //       title: post.title,
+  //       avatar: user.avatar,
+  //       username: user.nickname,
+  //       likes,
+  //       isLiked,
+  //     });
+  //   }
 
-  // 我的收藏
-  async getMyCollections(userId: number) {
-    const cacheKey = `user:mycollections:${userId}`;
-    const cached = await this.redisService.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+  //   await this.redisService.set(cacheKey, JSON.stringify(result), 60); // 缓存 60 秒
+  //   return result;
+  // }
 
-    const collects = await this.collectService.findByUser(userId);
-    const allLikes = await this.likeService.findAll(); // ✅ 提前查，避免每个 post 重复查
-    const result: {
-      id: number;
-      image: string | null;
-      title: string;
-      avatar: string;
-      username: string;
-      likes: number;
-      isLiked: boolean;
-    }[] = [];
+  // // 我的点赞
+  // async getMyLikes(userId: number) {
+  //   const cacheKey = `user:mylikes:${userId}`;
+  //   const cached = await this.redisService.get(cacheKey);
+  //   if (cached) return JSON.parse(cached);
 
-    for (const collect of collects) {
-      const post = await this.postService.findOne(collect.post_id);
-      if (!post) continue;
+  //   const likes = await this.likeService.findAll();
+  //   const myLikes = likes.filter(
+  //     (l) => l.user_id === userId && l.target_type === 'Post',
+  //   );
 
-      const medias = await this.mediaService.findByOwner('Post', post.post_id);
-      const image = medias.length > 0 ? medias[0].url : null;
-      const user = await this.getBasicUserInfo(post.user_id);
-      const likes = post.like_count || 0;
+  //   const result: {
+  //     id: number;
+  //     image: string | null;
+  //     title: string;
+  //     avatar: string;
+  //     username: string;
+  //     likes: number;
+  //     isLiked: boolean;
+  //   }[] = [];
 
-      const isLiked = allLikes.some(
-        (l) =>
-          l.user_id === userId &&
-          l.target_type === 'Post' &&
-          l.target_id === post.post_id,
-      );
+  //   for (const like of myLikes) {
+  //     const post = await this.postService.findOne(like.target_id);
+  //     if (!post) continue;
 
-      result.push({
-        id: post.post_id,
-        image,
-        title: post.title,
-        avatar: user.avatar,
-        username: user.nickname,
-        likes,
-        isLiked,
-      });
-    }
+  //     const medias = await this.mediaService.findByOwner('Post', post.post_id);
+  //     const image = medias.length > 0 ? medias[0].url : null;
+  //     const user = await this.getBasicUserInfo(post.user_id);
+  //     const likeCount = post.like_count || 0;
 
-    await this.redisService.set(cacheKey, JSON.stringify(result), 60); // 缓存 60 秒
-    return result;
-  }
+  //     result.push({
+  //       id: post.post_id,
+  //       image,
+  //       title: post.title,
+  //       avatar: user.avatar,
+  //       username: user.nickname,
+  //       likes: likeCount,
+  //       isLiked: true, // 恒为 true
+  //     });
+  //   }
 
-  // 我的点赞
-  async getMyLikes(userId: number) {
-    const cacheKey = `user:mylikes:${userId}`;
-    const cached = await this.redisService.get(cacheKey);
-    if (cached) return JSON.parse(cached);
-
-    const likes = await this.likeService.findAll();
-    const myLikes = likes.filter(
-      (l) => l.user_id === userId && l.target_type === 'Post',
-    );
-
-    const result: {
-      id: number;
-      image: string | null;
-      title: string;
-      avatar: string;
-      username: string;
-      likes: number;
-      isLiked: boolean;
-    }[] = [];
-
-    for (const like of myLikes) {
-      const post = await this.postService.findOne(like.target_id);
-      if (!post) continue;
-
-      const medias = await this.mediaService.findByOwner('Post', post.post_id);
-      const image = medias.length > 0 ? medias[0].url : null;
-      const user = await this.getBasicUserInfo(post.user_id);
-      const likeCount = post.like_count || 0;
-
-      result.push({
-        id: post.post_id,
-        image,
-        title: post.title,
-        avatar: user.avatar,
-        username: user.nickname,
-        likes: likeCount,
-        isLiked: true, // 恒为 true
-      });
-    }
-
-    await this.redisService.set(cacheKey, JSON.stringify(result), 60); // 缓存 60 秒
-    return result;
-  }
+  //   await this.redisService.set(cacheKey, JSON.stringify(result), 60); // 缓存 60 秒
+  //   return result;
+  // }
 
   async findByEmail(eamil: string): Promise<User | null> {
     // 你用的phone/email/nickname都可以改为合适字段，这里假设用email登录

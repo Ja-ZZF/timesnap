@@ -7,7 +7,6 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { CommentModule } from './comment/comment.module';
 import { LikeModule } from './like/like.module';
-import { ConversationModule } from './conversation/conversation.module';
 import { CollectModule } from './collect/collect.module';
 import { BrowseModule } from './browse/browse.module';
 import { FollowModule } from './follow/follow.module';
@@ -46,7 +45,6 @@ import { UploadModule } from './upload/upload.module';
     MediaModule,
     CommentModule,
     LikeModule,
-    ConversationModule,
     CollectModule,
     BrowseModule,
     FollowModule,

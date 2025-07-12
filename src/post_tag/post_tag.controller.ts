@@ -7,23 +7,4 @@ import { PostTag } from './entities/post_tag.entity';
 export class PostTagController {
   constructor(private readonly postTagService: PostTagService) {}
 
-  @Post()
-  create(@Body() data: Partial<PostTag>) {
-    return this.postTagService.create(data);
-  }
-
-  @Get()
-  findAll() {
-    return this.postTagService.findAll();
-  }
-
-  @Get('post/:postId')
-  findByPost(@Param('postId') postId: number) {
-    return this.postTagService.findByPost(postId);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.postTagService.remove(id);
-  }
 }

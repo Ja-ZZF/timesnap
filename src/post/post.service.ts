@@ -26,6 +26,7 @@ import { CollectService } from 'src/collect/collect.service';
 import { TagSimple } from 'src/tag/dto/tag-simple.dto';
 import { PostTagService } from 'src/post_tag/post_tag.service';
 import { CommentSimple } from 'src/comment/dto/comment-simple.dto';
+import { UserSimple } from 'src/user/dto/user-simple.dto';
 
 @Injectable()
 export class PostService {
@@ -38,70 +39,12 @@ export class PostService {
     private readonly userService: UserService,
     private readonly mediaService: MediaService,
     private readonly likeService: LikeService,
-    private readonly collectService : CollectService,
-    private readonly postTagService : PostTagService,
+    private readonly collectService: CollectService,
+    private readonly postTagService: PostTagService,
     private readonly redisService: RedisService, // ✅ 注入 Redis
   ) {}
 
-  async findAll(): Promise<Post[]> {
-    const sql = 'SELECT * FROM post';
-    return this.dataSource.query(sql);
-  }
 
-  async findOne(id: number): Promise<Post | null> {
-    const sql = 'SELECT * FROM post WHERE post_id = ?';
-    const result = await this.dataSource.query(sql, [id]);
-    return result[0] ?? null;
-  }
-
-  async findByUserId(userId: number): Promise<Post[]> {
-    const sql = `
-      SELECT * FROM post
-      WHERE user_id = ?
-      ORDER BY publish_time DESC
-    `;
-    return this.dataSource.query(sql, [userId]);
-  }
-
-  async findByUserIds(userIds: number[]): Promise<number[]> {
-    if (!userIds || userIds.length == 0) return [];
-
-    const posts = await this.postRepo.find({
-      where: { user_id: In(userIds) },
-      select: ['post_id'],
-    });
-
-    return posts.map((post) => post.post_id);
-  }
-
-  async create(postData: Partial<Post>): Promise<Post> {
-    return this.dataSource.transaction(async (manager) => {
-      const sql = `
-        INSERT INTO post (user_id,title,content)
-        VALUES(?,?,?)
-      `;
-      const params = [postData.user_id, postData.title, postData.content];
-
-      const result = await manager.query(sql, params);
-
-      const insertedId = result.insertId;
-
-      const insertedRows = await manager.query(
-        'SELECT * FROM post WHERE post_id = ?',
-        [insertedId],
-      );
-      return insertedRows[0];
-    });
-  }
-
-  async update(id: number, postData: Partial<Post>): Promise<Post | null> {
-    await this.postRepo.update(id, postData);
-    return this.findOne(id);
-  }
-
-  async remove(id: number): Promise<void> {
-    await this.postRepo.delete(id);
-  }
 
   //查询post简单数据
   async getPostSimple(self_id: number, post_id: number) {
@@ -128,9 +71,71 @@ export class PostService {
     return postSimple;
   }
 
+  //批量查询post简单数据
+  async getPostsSimple(
+    self_id: number,
+    post_ids: number[],
+  ): Promise<PostSimple[]> {
+    if (post_ids.length === 0) return [];
+
+    // 查询所有 posts
+    const posts = await this.postRepo.findBy({
+      post_id: In(post_ids),
+    });
+
+    if (posts.length === 0) {
+      throw new NotFoundException('未找到相关笔记');
+    }
+
+    // 构建 post_id 到 post 的映射
+    const postMap = new Map(posts.map((post) => [post.post_id, post]));
+
+
+    // 查询所有发布者的 user_id 并去重
+    const userIds = [...new Set(posts.map((post) => post.user_id))];
+
+    // 获取所有发布者的简略信息
+    const userSimpleMap = new Map<number, UserSimple>();
+    await Promise.all(
+      userIds.map(async (user_id) => {
+        const simple = await this.userService.getSimple(self_id, user_id);
+        userSimpleMap.set(user_id, simple);
+      }),
+    );
+
+    // 查询所有点赞状态（并发优化）
+    const likeStatuses = await Promise.all(
+      post_ids.map((post_id) =>
+        this.likeService.isLiked(self_id, 'Post', post_id),
+      ),
+    );
+
+    // 构建 PostSimple 列表，保持原始顺序
+    const postSimples: PostSimple[] = post_ids
+      .map((post_id, index) => {
+        const post = postMap.get(post_id);
+        if (!post) {
+          return null;
+        }
+        return {
+          post_id: post.post_id,
+          title: post.title,
+          publisher: userSimpleMap.get(post.user_id)!,
+          like_stats: {
+            like_count: post.like_count,
+            is_liked: likeStatuses[index],
+          },
+          cover_url: post.cover_url,
+        };
+      })
+      .filter((item): item is PostSimple => item !== null); // 过滤掉未找到的 post
+
+    return postSimples;
+  }
+
   //查询post具体数据
   async getPostDetail(self_id: number, post_id: number): Promise<PostDetail> {
-    const postSimple = await this.getPostSimple(self_id,post_id);
+    const postSimple = await this.getPostSimple(self_id, post_id);
 
     const post = await this.postRepo.findOne({
       where: { post_id: post_id },
@@ -150,29 +155,29 @@ export class PostService {
       comment_permission: post.comment_permission,
     };
 
-    const collectStats : CollectStats = {
-      collect_count : post.collect_count,
-      is_collected : await this.collectService.isCollected(self_id,post_id),
-    }
+    const collectStats: CollectStats = {
+      collect_count: post.collect_count,
+      is_collected: await this.collectService.isCollected(self_id, post_id),
+    };
 
-    const tags : TagSimple[] = await this.postTagService.getSimple(post_id);
-    const comments : CommentSimple[] = await this.commentService.getPostCommentSimple(self_id,post_id);
+    const tags: TagSimple[] = await this.postTagService.getSimple(post_id);
+    const comments: CommentSimple[] =
+      await this.commentService.getPostCommentSimple(self_id, post_id);
 
-    const postDetail : PostDetail = {
-      post_simple : postSimple,
-      content : post.content,
-      medias : medias,
-      permission : permission,
-      publish_time : post.publish_time,
-      collect_stats : collectStats,
-      browse_count : post.browse_count,
-      comment_count : post.comment_count,
-      tags : tags,
-      comments : comments,
+    const postDetail: PostDetail = {
+      post_simple: postSimple,
+      content: post.content,
+      medias: medias,
+      permission: permission,
+      publish_time: post.publish_time,
+      collect_stats: collectStats,
+      browse_count: post.browse_count,
+      comment_count: post.comment_count,
+      tags: tags,
+      comments: comments,
     };
 
     return postDetail;
-
   }
 
   //获取用户的所有的post的点赞和

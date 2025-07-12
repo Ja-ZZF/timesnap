@@ -4,10 +4,10 @@ import { User } from '../../user/entities/user.entity';
 
 @Entity({ name: 'post' })
 export class Post {
-  @PrimaryGeneratedColumn({type:'int'})
+  @PrimaryGeneratedColumn()
   post_id: number;
 
-  @Column({type : 'int'})
+  @Column()
   user_id: number;
 
   @ManyToOne(() => User)

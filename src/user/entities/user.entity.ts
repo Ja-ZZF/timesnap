@@ -7,7 +7,7 @@ import {
 
 @Entity('user')
 export class User {
-  @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
+  @PrimaryGeneratedColumn()
   user_id: number;
 
   @Column({ length: 20 })

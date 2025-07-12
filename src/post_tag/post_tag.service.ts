@@ -12,22 +12,6 @@ export class PostTagService {
     private readonly postTagRepo: Repository<PostTag>,
   ) {}
 
-  create(data: Partial<PostTag>) {
-    return this.postTagRepo.save(data);
-  }
-
-  findAll() {
-    return this.postTagRepo.find();
-  }
-
-  findByPost(postId: number) {
-    return this.postTagRepo.find({ where: { post_id: postId }, relations: ['tag'] });
-  }
-
-  remove(id: number) {
-    return this.postTagRepo.delete(id);
-  }
-
   async getSimple(post_id : number) : Promise<TagSimple[]>{
     const tags = await this.postTagRepo.find({
       where : {post_id : post_id},

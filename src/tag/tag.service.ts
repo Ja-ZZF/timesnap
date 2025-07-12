@@ -12,21 +12,5 @@ export class TagService {
     private tagRepo: Repository<Tag>,
   ) {}
 
-  create(name: string) {
-    const tag = this.tagRepo.create({ name });
-    return this.tagRepo.save(tag);
-  }
-
-  findAll(): Promise<Tag[]> {
-    return this.tagRepo.find();
-  }
-
-  findOne(id: number): Promise<Tag | null> {
-    return this.tagRepo.findOneBy({ tag_id: id });
-  }
-
-  remove(id: number) {
-    return this.tagRepo.delete(id);
-  }
 
 }

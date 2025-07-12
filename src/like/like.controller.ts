@@ -7,11 +7,6 @@ import { Like } from './entities/like.entity';
 export class LikeController {
   constructor(private readonly likeService: LikeService) {}
 
-  @Get()
-  findAll():Promise<Like[]>{
-    return this.likeService.findAll();
-  }
-
   @Post()
   async toggleLike(
     @Body('user_id') userId: number,
@@ -23,13 +18,4 @@ export class LikeController {
     return { result: liked }; // true: 已点赞，false: 取消点赞
   }
 
-  @Post()
-  create(@Body() like: Partial<Like>) {
-    return this.likeService.create(like);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.likeService.remove(+id);
-  }
 }
