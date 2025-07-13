@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Media } from './entities/media.entity';
 import { MediaSimple } from './dto/media-simple.dto';
+import { generateResizedImages } from 'src/common/storage';
 
 @Injectable()
 export class MediaService {
@@ -55,5 +56,28 @@ export class MediaService {
     }
 
     return resultMap;
+  }
+
+  async createMedias(
+    files : Express.Multer.File[],
+    ownerType:'Post'|'Comment'|'Draft',
+    ownerId : number,
+    baseFolder : string
+  ){
+    const medias : Media[] = [];
+
+    for(const file of files){
+      const resizedImages = await generateResizedImages(file,baseFolder);
+
+      const media = this.mediaRepo.create({
+        owner_type : ownerType,
+        owner_id : ownerId,
+        url : resizedImages.original,
+      })
+
+      medias.push(await this.mediaRepo.save(media));
+    }
+
+    return medias;
   }
 }

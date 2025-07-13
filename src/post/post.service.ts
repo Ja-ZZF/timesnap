@@ -4,6 +4,7 @@ import {
   NotFoundException,
   Inject,
   forwardRef,
+  flatten,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Long, ManyToMany, Repository } from 'typeorm';
@@ -27,6 +28,8 @@ import { TagSimple } from 'src/tag/dto/tag-simple.dto';
 import { PostTagService } from 'src/post_tag/post_tag.service';
 import { CommentSimple } from 'src/comment/dto/comment-simple.dto';
 import { UserSimple } from 'src/user/dto/user-simple.dto';
+import { CreatePost } from './dto/create-post.dto';
+import { generateResizedImages } from 'src/common/storage';
 
 @Injectable()
 export class PostService {
@@ -43,8 +46,6 @@ export class PostService {
     private readonly postTagService: PostTagService,
     private readonly redisService: RedisService, // ✅ 注入 Redis
   ) {}
-
-
 
   //查询post简单数据
   async getPostSimple(self_id: number, post_id: number) {
@@ -200,5 +201,34 @@ export class PostService {
       .getRawOne();
 
     return Number(result.collect_count_sum) || 0; // 防止 null
+  }
+
+  //新建一条post
+  async addPost(self_id:number,dto : CreatePost,files:Express.Multer.File[]){
+    const post = this.postRepo.create({
+      user_id:self_id,
+      title : dto.title,
+      content : dto.content,
+    })
+
+    const savedPost = await this.postRepo.save(post);
+
+    if(!savedPost){
+      throw new Error('创建失败');
+    }
+
+    if(files?.length){
+      const medias = await this.mediaService.createMedias(
+        files,
+        'Post',
+        savedPost.post_id,
+        'posts'
+      );
+
+      savedPost.cover_url = medias[0]?.url ?? '';
+      await this.postRepo.save(savedPost);
+    }
+
+    return {message:"创建成功"};
   }
 }
