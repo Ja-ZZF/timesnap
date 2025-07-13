@@ -20,28 +20,30 @@ import { CurrentUser } from 'src/common/user.decorator';
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
-  @UseGuards(AuthGuard('jwt'))
-  @Get('simple')
-  async getSimple(
-    @CurrentUser('user_id') self_id: number,
-    @Query('comment_id') comment_id: number,
-  ) {
-    return this.commentService.getCommentSimpleFast(self_id,comment_id);
-  }
+  // @UseGuards(AuthGuard('jwt'))
+  // @Get('simple')
+  // async getSimple(
+  //   @CurrentUser('user_id') self_id: number,
+  //   @Query('comment_id') comment_id: number,
+  // ) {
+  //   return this.commentService.getCommentSimpleFast(self_id,comment_id);
+  // }
+
+  // @UseGuards(AuthGuard('jwt'))
+  // @Get('by-postId')
+  // async getPostSimple(
+  //   @CurrentUser('user_id') self_id :number,
+  //   @Query('post_id') post_id : number,
+  // ){
+  //   return this.commentService.getPostCommentSimple(self_id,post_id);
+  // }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get('by-postId')
-  async getPostSimple(
+  @Post('add')
+  async addComment(
     @CurrentUser('user_id') self_id :number,
-    @Query('post_id') post_id : number,
+    @Body() body : CreateCommentDto
   ){
-    return this.commentService.getPostCommentSimple(self_id,post_id);
-  }
-
-  @Post()
-  async createComment(
-    @Body() createCommentDto: CreateCommentDto,
-  ): Promise<Comment> {
-    return this.commentService.create(createCommentDto);
+    return this.commentService.addComment(self_id,body);
   }
 }

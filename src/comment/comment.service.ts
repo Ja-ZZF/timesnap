@@ -38,36 +38,8 @@ export class CommentService {
     private readonly redisService: RedisService, // ✅ 注入 Redis
   ) {}
 
-  async create(createDto: CreateCommentDto): Promise<Comment> {
-    const { post_id, parent_comment_id, user_id, content } = createDto;
 
-    // 校验帖子存在
-    const post = await this.postRepo.findOneBy({ post_id });
-    if (!post) throw new NotFoundException('Post not found');
-
-    // 校验用户存在
-    const user = await this.userRepo.findOneBy({ user_id });
-    if (!user) throw new NotFoundException('User not found');
-
-    // 如果是子评论，校验父评论存在
-    let parent: Comment | null = null;
-    if (parent_comment_id) {
-      parent = await this.commentRepo.findOneBy({
-        comment_id: parent_comment_id,
-      });
-      if (!parent) throw new NotFoundException('Parent comment not found');
-    }
-
-    const comment = this.commentRepo.create({
-      post_id,
-      parent_comment_id: parent_comment_id || null,
-      user_id,
-      content,
-    });
-
-    return this.commentRepo.save(comment);
-  }
-
+  //普通查询某评论的所有评论
   async getCommentSimple(
     self_id: number,
     comment_id: number,
@@ -127,6 +99,7 @@ export class CommentService {
     return commetSimple;
   }
 
+  //快速查询某评论的所有评论
   async getCommentSimpleFast(
     self_id: number,
     comment_id: number,
@@ -216,6 +189,8 @@ export class CommentService {
     // 7. 返回根节点
     return simpleMap.get(comment_id)!;
   }
+  
+  //查询某笔记下的所有评论
   async getPostCommentSimple(
     self_id: number,
     post_id: number,
@@ -273,5 +248,22 @@ export class CommentService {
 
     // 5. 返回根节点（即 parent_comment_id 为 null 的评论列表）
     return buildTree(null);
+  }
+
+  async addComment(self_id:number,dto : CreateCommentDto){
+    const newComment = this.commentRepo.create({
+      post_id : dto.post_id,
+      parent_comment_id : dto.parent_comment_id,
+      user_id : self_id,
+      content : dto.content,
+    });
+
+    const result = await this.commentRepo.save(newComment);
+
+    if(result){
+      return {message:'建立成功'};
+    }else{
+      throw new Error('建立失败');
+    }
   }
 }
