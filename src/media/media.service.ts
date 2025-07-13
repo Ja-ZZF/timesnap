@@ -58,26 +58,32 @@ export class MediaService {
     return resultMap;
   }
 
-  async createMedias(
-    files : Express.Multer.File[],
-    ownerType:'Post'|'Comment'|'Draft',
-    ownerId : number,
-    baseFolder : string
-  ){
-    const medias : Media[] = [];
+  async createMediasAndGetFirstThumb(
+  files: Express.Multer.File[],
+  ownerType: 'Post' | 'Comment' | 'Draft',
+  ownerId: number,
+  baseFolder: string
+): Promise<string | null> {
+  if (!files?.length) return null;
 
-    for(const file of files){
-      const resizedImages = await generateResizedImages(file,baseFolder);
+  let firstThumbUrl: string | null = null;
 
-      const media = this.mediaRepo.create({
-        owner_type : ownerType,
-        owner_id : ownerId,
-        url : resizedImages.original,
-      })
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const resizedImages = await generateResizedImages(file, baseFolder);
 
-      medias.push(await this.mediaRepo.save(media));
+    await this.mediaRepo.save({
+      owner_type: ownerType,
+      owner_id: ownerId,
+      url: resizedImages.original,
+    });
+
+    if (i === 0) {
+      firstThumbUrl = resizedImages.thumb;
     }
-
-    return medias;
   }
+
+  return firstThumbUrl;
+}
+
 }

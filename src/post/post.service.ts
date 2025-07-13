@@ -91,7 +91,6 @@ export class PostService {
     // 构建 post_id 到 post 的映射
     const postMap = new Map(posts.map((post) => [post.post_id, post]));
 
-
     // 查询所有发布者的 user_id 并去重
     const userIds = [...new Set(posts.map((post) => post.user_id))];
 
@@ -204,31 +203,38 @@ export class PostService {
   }
 
   //新建一条post
-  async addPost(self_id:number,dto : CreatePost,files:Express.Multer.File[]){
+  async addPost(
+    self_id: number,
+    dto: CreatePost,
+    files: Express.Multer.File[],
+  ) {
     const post = this.postRepo.create({
-      user_id:self_id,
-      title : dto.title,
-      content : dto.content,
-    })
+      user_id: self_id,
+      title: dto.title,
+      content: dto.content,
+    });
 
     const savedPost = await this.postRepo.save(post);
 
-    if(!savedPost){
+    if (!savedPost) {
       throw new Error('创建失败');
     }
 
-    if(files?.length){
-      const medias = await this.mediaService.createMedias(
-        files,
-        'Post',
-        savedPost.post_id,
-        'posts'
-      );
+    if (files?.length) {
+      const firstThumbUrl =
+        await this.mediaService.createMediasAndGetFirstThumb(
+          files,
+          'Post',
+          savedPost.post_id,
+          'posts',
+        );
 
-      savedPost.cover_url = medias[0]?.url ?? '';
-      await this.postRepo.save(savedPost);
+      if (firstThumbUrl) {
+        savedPost.cover_url = firstThumbUrl;
+        await this.postRepo.save(savedPost);
+      }
     }
 
-    return {message:"创建成功"};
+    return { message: '创建成功' };
   }
 }
