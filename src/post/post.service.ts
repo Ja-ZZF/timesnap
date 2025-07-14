@@ -29,7 +29,9 @@ import { PostTagService } from 'src/post_tag/post_tag.service';
 import { CommentSimple } from 'src/comment/dto/comment-simple.dto';
 import { UserSimple } from 'src/user/dto/user-simple.dto';
 import { CreatePost } from './dto/create-post.dto';
-import { generateResizedImages } from 'src/common/storage';
+import * as path from 'path';
+import * as fs from 'fs';
+import { compressVideo } from 'src/common/storage';
 
 @Injectable()
 export class PostService {
@@ -47,13 +49,26 @@ export class PostService {
     private readonly redisService: RedisService, // ✅ 注入 Redis
   ) {}
 
-  //查询所有post的post_id组成列表 
-  async getPostIdList() : Promise<number[]>{
+  //查询所有post的post_id组成列表
+  async getPostIdList(): Promise<number[]> {
     const posts = await this.postRepo.find({
-      select:['post_id'],
+      select: ['post_id'],
+      where: {is_video : false},
     });
 
-    const result = posts.map(post=>post.post_id);
+    const result = posts.map((post) => post.post_id);
+
+    return result;
+  }
+
+  //查询所有viedoPost的post_id 组成列表
+    async getVideoPostIdList(): Promise<number[]> {
+    const posts = await this.postRepo.find({
+      select: ['post_id'],
+      where: {is_video : true},
+    });
+
+    const result = posts.map((post) => post.post_id);
 
     return result;
   }
@@ -78,7 +93,7 @@ export class PostService {
       publisher: publisher,
       like_stats: likeStats,
       cover_url: post.cover_url,
-      is_vedio : post.is_video,
+      is_vedio: post.is_video,
     };
 
     return postSimple;
@@ -138,7 +153,7 @@ export class PostService {
             is_liked: likeStatuses[index],
           },
           cover_url: post.cover_url,
-          is_vedio : post.is_video,
+          is_vedio: post.is_video,
         };
       })
       .filter((item): item is PostSimple => item !== null); // 过滤掉未找到的 post
@@ -246,6 +261,42 @@ export class PostService {
         savedPost.cover_url = firstThumbUrl;
         await this.postRepo.save(savedPost);
       }
+    }
+
+    return { message: '创建成功' };
+  }
+
+  //新建视频post
+  async addVideoPost(
+    self_id: number,
+    dto: CreatePost,
+    file: Express.Multer.File,
+  ) {
+    const baseUrl = process.env.BASE_URL || '';
+
+    // 压缩输出目录
+    const outputDir = path.join('uploads', 'videos', 'compressed');
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    // 压缩视频
+    const compressedPath = await compressVideo(file.path, outputDir);
+
+    // 压缩后的视频 URL
+    const compressedUrl = `${baseUrl}/uploads/videos/compressed/${path.basename(compressedPath)}`;
+
+    const post = this.postRepo.create({
+      user_id: self_id,
+      title: dto.title,
+      content: dto.content,
+      cover_url: compressedUrl,
+      is_video: true,
+    });
+
+    const savedPost = await this.postRepo.save(post);
+
+    if (!savedPost) {
+      throw new Error('创建失败');
     }
 
     return { message: '创建成功' };

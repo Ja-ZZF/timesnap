@@ -14,13 +14,14 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFiles,
+  UploadedFile,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { Post as PostEntity } from './entities/post.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/common/user.decorator';
 import { CreatePost } from './dto/create-post.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { createStorageOption } from 'src/common/storage';
 import { getTime } from 'date-fns';
 
@@ -28,6 +29,7 @@ import { getTime } from 'date-fns';
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
+  //获取指定笔记
   @UseGuards(AuthGuard('jwt'))
   @Post('simple')
   async getSimple(
@@ -37,15 +39,15 @@ export class PostController {
     return this.postService.getPostsSimple(self_id, post_ids);
   }
 
+  //获取所有笔记（非视频类）
   @UseGuards(AuthGuard('jwt'))
   @Get('simple_all')
-  async getSimpleAll(
-    @CurrentUser('user_id') self_id : number,
-  ){
-    const post_ids : number[] = await this.postService.getPostIdList();
-    return this.postService.getPostsSimple(self_id,post_ids);
+  async getSimpleAll(@CurrentUser('user_id') self_id: number) {
+    const post_ids: number[] = await this.postService.getPostIdList();
+    return this.postService.getPostsSimple(self_id, post_ids);
   }
 
+  //获取笔记详细信息
   @UseGuards(AuthGuard('jwt'))
   @Get('detail')
   async getDetail(
@@ -55,17 +57,53 @@ export class PostController {
     return this.postService.getPostDetail(self_id, post_id);
   }
 
+  //添加普通笔记
   @UseGuards(AuthGuard('jwt'))
   @Post('add')
-    @UseInterceptors(FilesInterceptor('images', 9, {
-    storage: createStorageOption('posts'),
-    limits: { fileSize: 5 * 1024 * 1024 },
-  }))
+  @UseInterceptors(
+    FilesInterceptor('images', 9, {
+      storage: createStorageOption('posts'),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
   async addPost(
-    @CurrentUser('user_id') self_id : number,
+    @CurrentUser('user_id') self_id: number,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body() body : CreatePost
-  ){
-    return this.postService.addPost(self_id,body,files);
+    @Body() body: CreatePost,
+  ) {
+    return this.postService.addPost(self_id, body, files);
+  }
+
+  //添加视频笔记
+  @UseGuards(AuthGuard('jwt'))
+  @Post('add-video')
+  @UseInterceptors(
+    FileInterceptor('video', {
+      storage: createStorageOption('videos'),
+      limits: { fileSize: 100 * 1024 * 1024 }, // 限制100MB
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('video/')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only video files are allowed!'), false);
+        }
+      },
+    }),
+  )
+  async addVideoPost(
+    @CurrentUser('user_id') self_id: number,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: CreatePost, // 假设你有视频的Post DTO
+  ) {
+    return this.postService.addVideoPost(self_id, body, file);
+  }
+
+  //获取视频类笔记的列表
+  @UseGuards(AuthGuard('jwt'))
+  @Get('video_list')
+  async getVideoPostList(
+    @CurrentUser('user_id') self_id: number,
+  ): Promise<number[]> {
+    return this.postService.getVideoPostIdList();
   }
 }
