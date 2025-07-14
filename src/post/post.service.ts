@@ -78,6 +78,7 @@ export class PostService {
       publisher: publisher,
       like_stats: likeStats,
       cover_url: post.cover_url,
+      is_vedio : post.is_video,
     };
 
     return postSimple;
@@ -137,6 +138,7 @@ export class PostService {
             is_liked: likeStatuses[index],
           },
           cover_url: post.cover_url,
+          is_vedio : post.is_video,
         };
       })
       .filter((item): item is PostSimple => item !== null); // 过滤掉未找到的 post

@@ -250,6 +250,7 @@ export class CommentService {
     return buildTree(null);
   }
 
+  //添加评论
   async addComment(self_id:number,dto : CreateCommentDto){
     const newComment = this.commentRepo.create({
       post_id : dto.post_id,

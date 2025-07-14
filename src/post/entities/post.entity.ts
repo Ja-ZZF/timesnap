@@ -1,5 +1,12 @@
 // src/post/entities/post.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 
 @Entity({ name: 'post' })
@@ -17,31 +24,41 @@ export class Post {
   @CreateDateColumn({ type: 'datetime' })
   publish_time: Date;
 
-  @Column({type:'varchar',length: 200 })
+  @Column({ type: 'varchar', length: 200 })
   title: string;
 
-  @Column({type:'text'})
+  @Column({ type: 'text' })
   content: string;
 
-  @Column({type:'int',default:0})
-  like_count : number;
+  @Column({ type: 'int', default: 0 })
+  like_count: number;
 
-  @Column({type:'int',default:0})
-  collect_count : number;
+  @Column({ type: 'int', default: 0 })
+  collect_count: number;
 
-  @Column({type:'int',default:0})
-  browse_count : number;
+  @Column({ type: 'int', default: 0 })
+  browse_count: number;
 
-  @Column({type:'int',default:0})
-  comment_count : number;
+  @Column({ type: 'int', default: 0 })
+  comment_count: number;
 
-  @Column({ type: 'enum', enum: ['Public', 'FansOnly', 'MutualOnly', 'Private'], default: 'Public' })
+  @Column({
+    type: 'enum',
+    enum: ['Public', 'FansOnly', 'MutualOnly', 'Private'],
+    default: 'Public',
+  })
   view_permission: 'Public' | 'FansOnly' | 'MutualOnly' | 'Private';
 
-  @Column({ type: 'enum', enum: ['Public', 'FansOnly', 'MutualOnly', 'Closed'], default: 'Public' })
+  @Column({
+    type: 'enum',
+    enum: ['Public', 'FansOnly', 'MutualOnly', 'Closed'],
+    default: 'Public',
+  })
   comment_permission: 'Public' | 'FansOnly' | 'MutualOnly' | 'Closed';
 
-  @Column({type:'varchar',length:200})
-  cover_url : string;
-
+  @Column({ type: 'varchar', length: 200 })
+  cover_url: string;
+  
+  @Column({ type: 'boolean', default: false })
+  is_video: boolean;
 }

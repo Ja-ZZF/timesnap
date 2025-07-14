@@ -7,4 +7,5 @@ export class PostSimple{
     publisher : UserSimple;
     like_stats : LikeStats;
     cover_url : string;
+    is_vedio : boolean = false;
 }
