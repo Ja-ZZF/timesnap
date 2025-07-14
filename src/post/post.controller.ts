@@ -22,6 +22,7 @@ import { CurrentUser } from 'src/common/user.decorator';
 import { CreatePost } from './dto/create-post.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { createStorageOption } from 'src/common/storage';
+import { getTime } from 'date-fns';
 
 @Controller('posts')
 export class PostController {
@@ -34,6 +35,15 @@ export class PostController {
     @Body('post_ids') post_ids: number[],
   ) {
     return this.postService.getPostsSimple(self_id, post_ids);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('simple_all')
+  async getSimpleAll(
+    @CurrentUser('user_id') self_id : number,
+  ){
+    const post_ids : number[] = await this.postService.getPostIdList();
+    return this.postService.getPostsSimple(self_id,post_ids);
   }
 
   @UseGuards(AuthGuard('jwt'))

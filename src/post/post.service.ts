@@ -47,6 +47,17 @@ export class PostService {
     private readonly redisService: RedisService, // ✅ 注入 Redis
   ) {}
 
+  //查询所有post的post_id组成列表 
+  async getPostIdList() : Promise<number[]>{
+    const posts = await this.postRepo.find({
+      select:['post_id'],
+    });
+
+    const result = posts.map(post=>post.post_id);
+
+    return result;
+  }
+
   //查询post简单数据
   async getPostSimple(self_id: number, post_id: number) {
     const post = await this.postRepo.findOne({
