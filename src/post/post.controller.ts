@@ -24,6 +24,7 @@ import { CreatePost } from './dto/create-post.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { createStorageOption } from 'src/common/storage';
 import { getTime } from 'date-fns';
+import { AddPostByUrls } from './dto/create-post-by-urls.dto';
 
 @Controller('posts')
 export class PostController {
@@ -72,6 +73,16 @@ export class PostController {
     @Body() body: CreatePost,
   ) {
     return this.postService.addPost(self_id, body, files);
+  }
+
+  //根据urls添加笔记
+  @UseGuards(AuthGuard('jwt'))
+  @Post('add-by-urls')
+  async addPostByUrls(
+    @CurrentUser('user_id') self_id : number,
+    @Body() body : AddPostByUrls
+  ){  
+    return this.postService.addPostByUrls(self_id,body);
   }
 
   //添加视频笔记

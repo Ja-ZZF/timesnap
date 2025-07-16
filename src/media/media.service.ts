@@ -12,7 +12,6 @@ export class MediaService {
     private mediaRepo: Repository<Media>,
   ) {}
 
-
   async getSimple(
     owner_type: 'Post' | 'Comment',
     owner_id: number,
@@ -59,31 +58,48 @@ export class MediaService {
   }
 
   async createMediasAndGetFirstThumb(
-  files: Express.Multer.File[],
-  ownerType: 'Post' | 'Comment' | 'Draft',
-  ownerId: number,
-  baseFolder: string
-): Promise<string | null> {
-  if (!files?.length) return null;
+    files: Express.Multer.File[],
+    ownerType: 'Post' | 'Comment' | 'Draft',
+    ownerId: number,
+    baseFolder: string,
+  ): Promise<string | null> {
+    if (!files?.length) return null;
 
-  let firstThumbUrl: string | null = null;
+    let firstThumbUrl: string | null = null;
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const resizedImages = await generateResizedImages(file, baseFolder);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const resizedImages = await generateResizedImages(file, baseFolder);
 
-    await this.mediaRepo.save({
-      owner_type: ownerType,
-      owner_id: ownerId,
-      url: resizedImages.original,
-    });
+      await this.mediaRepo.save({
+        owner_type: ownerType,
+        owner_id: ownerId,
+        url: resizedImages.original,
+      });
 
-    if (i === 0) {
-      firstThumbUrl = resizedImages.thumb;
+      if (i === 0) {
+        firstThumbUrl = resizedImages.thumb;
+      }
+    }
+
+    return firstThumbUrl;
+  }
+
+  async createMediasByUrls(post_id: number, urls: string[]) {
+    try {
+      const medias = urls.map((url) =>
+        this.mediaRepo.create({
+          owner_type: 'Post',
+          owner_id: post_id,
+          url,
+        }),
+      );
+      await this.mediaRepo.save(medias);
+    } catch (error) {
+      console.error('创建媒体失败', error);
+      throw error;
     }
   }
 
-  return firstThumbUrl;
-}
 
 }

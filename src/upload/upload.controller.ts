@@ -8,6 +8,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { UploadService } from './upload.service';
+import { generateResizedImages } from 'src/common/storage';
 
 @Controller('upload')
 export class UploadController {
@@ -15,9 +16,9 @@ export class UploadController {
 
   @Post('image')
   @UseInterceptors(
-    FileInterceptor('file', {
+    FileInterceptor('images', {
       storage: diskStorage({
-        destination: './uploads/temp',
+        destination: './uploads/posts/temp',
         filename: (req, file, callback) => {
           const ext = extname(file.originalname);
           const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
@@ -27,8 +28,9 @@ export class UploadController {
     }),
   )
   async uploadImage(@UploadedFile() file: Express.Multer.File) {
-    const urls = await this.uploadService.generateResizedImages(file);
-    return { filename: file.filename, urls };
+    // 直接调用你导入的函数
+    const urls = await generateResizedImages(file, 'posts');
+    return urls.original;
   }
 
   @Post('video')

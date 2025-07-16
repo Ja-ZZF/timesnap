@@ -17,13 +17,13 @@ export class UploadService {
     const result: Record<string, string> = {};
 
     for (const [key, width] of Object.entries(sizes)) {
-      const outputDir = path.join('uploads', 'images', key);
+      const outputDir = path.join('uploads', 'posts', key);
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
       const outputPath = path.join(outputDir, file.filename);
-      const publicUrl = `/uploads/images/${key}/${file.filename}`;
+      const publicUrl = `/uploads/posts/${key}/${file.filename}`;
 
       try {
         if (key === 'original') {

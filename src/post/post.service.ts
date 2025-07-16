@@ -32,6 +32,7 @@ import { CreatePost } from './dto/create-post.dto';
 import * as path from 'path';
 import * as fs from 'fs';
 import { compressVideo } from 'src/common/storage';
+import { AddPostByUrls } from './dto/create-post-by-urls.dto';
 
 @Injectable()
 export class PostService {
@@ -53,7 +54,7 @@ export class PostService {
   async getPostIdList(): Promise<number[]> {
     const posts = await this.postRepo.find({
       select: ['post_id'],
-      where: {is_video : false},
+      where: { is_video: false },
     });
 
     const result = posts.map((post) => post.post_id);
@@ -62,10 +63,10 @@ export class PostService {
   }
 
   //查询所有viedoPost的post_id 组成列表
-    async getVideoPostIdList(): Promise<number[]> {
+  async getVideoPostIdList(): Promise<number[]> {
     const posts = await this.postRepo.find({
       select: ['post_id'],
-      where: {is_video : true},
+      where: { is_video: true },
     });
 
     const result = posts.map((post) => post.post_id);
@@ -300,5 +301,34 @@ export class PostService {
     }
 
     return { message: '创建成功' };
+  }
+
+  //新建一条post by urls
+  async addPostByUrls(self_id: number, dto: AddPostByUrls) {
+    const urls = dto.urls;
+
+    if (urls.length === 0) {
+      throw new Error('图片 urls 不能为空');
+    }
+
+    // 假设 urls 是 "/uploads/posts/original/xxx.jpg" 格式，替换 original 为 thumb
+    const cover_url = urls[0].replace('/original/', '/thumb/');
+
+    const post = this.postRepo.create({
+      user_id: self_id,
+      title: dto.title,
+      content: dto.content,
+      cover_url: cover_url, // 新增封面字段
+    });
+
+    const savedPost = await this.postRepo.save(post);
+
+    // 关联媒体，传入原始 urls
+    await this.mediaService.createMediasByUrls(
+      savedPost.post_id,
+      urls,
+    );
+
+    return savedPost;
   }
 }
