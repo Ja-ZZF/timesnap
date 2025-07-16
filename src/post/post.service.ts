@@ -329,6 +329,6 @@ export class PostService {
       urls,
     );
 
-    return savedPost;
+    return savedPost.post_id;
   }
 }
