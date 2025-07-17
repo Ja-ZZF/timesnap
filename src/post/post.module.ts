@@ -11,6 +11,7 @@ import { LikeModule } from 'src/like/like.module';
 import { CollectService } from 'src/collect/collect.service';
 import { PostTagModule } from 'src/post_tag/post_tag.module';
 import { CollectModule } from 'src/collect/collect.module';
+import { RecommendationModule } from 'src/recommendation/recommendation.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CollectModule } from 'src/collect/collect.module';
     LikeModule,
     CollectModule,
     PostTagModule,
+    RecommendationModule,
     
   ],
   providers: [PostService],

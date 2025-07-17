@@ -11,23 +11,11 @@ export class BrowseService {
     private readonly browseRepo: Repository<Browse>,
   ) {}
 
-  create(browse: Partial<Browse>) {
-    return this.browseRepo.save(browse);
-  }
-
-  findAll(): Promise<Browse[]> {
-    return this.browseRepo.find();
-  }
-
-  findByUser(userId: number): Promise<Browse[]> {
-    return this.browseRepo.find({ where: { user_id: userId } });
-  }
-
-  findByPost(postId: number): Promise<Browse[]> {
-    return this.browseRepo.find({ where: { post_id: postId } });
-  }
-
-  async remove(id: number) {
-    return this.browseRepo.delete(id);
+  async addBrowse(self_id : number,post_id : number){
+    const browse = this.browseRepo.create({
+      user_id : self_id,
+      post_id : post_id,
+    });
+    await this.browseRepo.save(browse);
   }
 }

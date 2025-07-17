@@ -1,34 +1,20 @@
 // src/browse/browse.controller.ts
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards } from '@nestjs/common';
 import { BrowseService } from './browse.service';
 import { Browse } from './entities/browse.entity';
+import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from 'src/common/user.decorator';
 
 @Controller('browses')
 export class BrowseController {
   constructor(private readonly browseService: BrowseService) {}
 
+  @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(@Body() browse: Partial<Browse>) {
-    return this.browseService.create(browse);
-  }
-
-  @Get()
-  findAll(): Promise<Browse[]> {
-    return this.browseService.findAll();
-  }
-
-  @Get('user/:userId')
-  findByUser(@Param('userId') userId: number): Promise<Browse[]> {
-    return this.browseService.findByUser(userId);
-  }
-
-  @Get('post/:postId')
-  findByPost(@Param('postId') postId: number): Promise<Browse[]> {
-    return this.browseService.findByPost(postId);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.browseService.remove(id);
+  addBrowse(
+    @CurrentUser('uesr_id') self_id : number,
+    @Body('post_id') post_id : number 
+  ){
+    this.browseService.addBrowse(self_id,post_id);
   }
 }

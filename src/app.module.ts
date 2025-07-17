@@ -18,6 +18,8 @@ import { ContactModule } from './contact/contact.module';
 import { ChatMessageModule } from './chat_message/chat_message.module';
 import { AuthModule } from './auth/auth.module';
 import { UploadModule } from './upload/upload.module';
+import { UserActionModule } from './user-action/user-action.module';
+import { RecommendationModule } from './recommendation/recommendation.module';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { UploadModule } from './upload/upload.module';
     ChatMessageModule,
     AuthModule,
     UploadModule,
+    UserActionModule,
+    RecommendationModule,
   ],
 })
 export class AppModule {}

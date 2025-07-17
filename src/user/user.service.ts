@@ -286,7 +286,6 @@ export class UserService {
   return result;
 }
 
-
   //获取用户详细信息
   async getDetail(self_id: number, target_id: number): Promise<UserDetail> {
     const targetUser = await this.userRepo.findOne({
@@ -317,7 +316,7 @@ export class UserService {
 
     const userDetail: UserDetail = {
       user_simple: userSimple,
-      introduction: '没有简介',
+      introduction: targetUser.introduction,
       follow_stats: followStats,
       like_count: likeCount,
       collect_count: collectCount,

@@ -33,6 +33,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { compressVideo } from 'src/common/storage';
 import { AddPostByUrls } from './dto/create-post-by-urls.dto';
+import { BoolEnum } from 'sharp';
+import { RecommendationService } from 'src/recommendation/recommendation.service';
 
 @Injectable()
 export class PostService {
@@ -48,9 +50,10 @@ export class PostService {
     private readonly collectService: CollectService,
     private readonly postTagService: PostTagService,
     private readonly redisService: RedisService, // ✅ 注入 Redis
+    private readonly recommendationService : RecommendationService
   ) {}
 
-  //查询所有post的post_id组成列表
+  //查询所有post的post_id组成列表(非视频流)
   async getPostIdList(): Promise<number[]> {
     const posts = await this.postRepo.find({
       select: ['post_id'],
@@ -62,7 +65,7 @@ export class PostService {
     return result;
   }
 
-  //查询所有viedoPost的post_id 组成列表
+  //查询所有viedoPost的post_id 组成列表 (视频流)
   async getVideoPostIdList(): Promise<number[]> {
     const posts = await this.postRepo.find({
       select: ['post_id'],
@@ -73,6 +76,13 @@ export class PostService {
 
     return result;
   }
+
+  //查询感兴趣的内容
+  async getInterestedPosts(self_id : number,num_posts : number){
+    const list : number[] = await this.recommendationService.getRecommendedPosts(self_id,num_posts);
+    return this.getPostsSimple(self_id,list);
+  }
+
 
   //查询post简单数据
   async getPostSimple(self_id: number, post_id: number) {
@@ -324,10 +334,7 @@ export class PostService {
     const savedPost = await this.postRepo.save(post);
 
     // 关联媒体，传入原始 urls
-    await this.mediaService.createMediasByUrls(
-      savedPost.post_id,
-      urls,
-    );
+    await this.mediaService.createMediasByUrls(savedPost.post_id, urls);
 
     return savedPost.post_id;
   }

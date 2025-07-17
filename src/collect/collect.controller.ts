@@ -1,17 +1,20 @@
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards } from '@nestjs/common';
 import { CollectService } from './collect.service';
 import { Collect } from './entities/collect.entity';
+import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from 'src/common/user.decorator';
 
 @Controller('collects')
 export class CollectController {
   constructor(private readonly collectService: CollectService) {}
-
+  
+  @UseGuards(AuthGuard('jwt'))
   @Post()
   async toggleCollect(
-    @Body('user_id') userId : number,
+    @CurrentUser('user_id') self_id : number,
     @Body('post_id') postId : number,
   ):Promise<{result:boolean}>{
-    const collected = await this.collectService.toggleCollect(userId,postId);
+    const collected = await this.collectService.toggleCollect(self_id,postId);
     return {result : collected};
   }
 

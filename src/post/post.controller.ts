@@ -79,10 +79,10 @@ export class PostController {
   @UseGuards(AuthGuard('jwt'))
   @Post('add-by-urls')
   async addPostByUrls(
-    @CurrentUser('user_id') self_id : number,
-    @Body() body : AddPostByUrls
-  ){  
-    return this.postService.addPostByUrls(self_id,body);
+    @CurrentUser('user_id') self_id: number,
+    @Body() body: AddPostByUrls,
+  ) {
+    return this.postService.addPostByUrls(self_id, body);
   }
 
   //添加视频笔记
@@ -116,5 +116,15 @@ export class PostController {
     @CurrentUser('user_id') self_id: number,
   ): Promise<number[]> {
     return this.postService.getVideoPostIdList();
+  }
+
+  //以下所有方法为测试用方法 正式环境可删除
+  @UseGuards(AuthGuard('jwt'))
+  @Post('interests')
+  async getPostIdListByNum(
+    @CurrentUser('user_id') self_id : number,
+    @Body('num_posts') num_posts: number,
+  ) {
+    return this.postService.getInterestedPosts(self_id,num_posts);
   }
 }

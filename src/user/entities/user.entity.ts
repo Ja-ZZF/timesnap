@@ -36,7 +36,10 @@ export class User {
 
   @Column({ type: 'int', default: 0 })
   follower_count: number;
-  
+
   @Column({ length: 255 })
   password: string;
+
+  @Column({ length: 255, default: '我是一个人' })
+  introduction: string;
 }
