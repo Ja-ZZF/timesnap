@@ -124,7 +124,8 @@ export class PostController {
   async getPostIdListByNum(
     @CurrentUser('user_id') self_id : number,
     @Body('num_posts') num_posts: number,
+    @Body('is_video') is_video : boolean,
   ) {
-    return this.postService.getInterestedPosts(self_id,num_posts);
+    return this.postService.getInterestedPosts(self_id,num_posts,is_video);
   }
 }

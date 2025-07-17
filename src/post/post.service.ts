@@ -78,8 +78,8 @@ export class PostService {
   }
 
   //查询感兴趣的内容
-  async getInterestedPosts(self_id : number,num_posts : number){
-    const list : number[] = await this.recommendationService.getRecommendedPosts(self_id,num_posts);
+  async getInterestedPosts(self_id : number,num_posts : number,is_video : boolean = false){
+    const list : number[] = await this.recommendationService.getRecommendedPosts(self_id,num_posts,is_video);
     return this.getPostsSimple(self_id,list);
   }
 

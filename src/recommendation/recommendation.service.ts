@@ -6,7 +6,7 @@ import { lastValueFrom } from 'rxjs';
 export class RecommendationService {
   constructor(private readonly httpService: HttpService) {}
 
-  async getRecommendedPosts(userId: number, numPosts: number = 10): Promise<number[]> {
+  async getRecommendedPosts(userId: number, numPosts: number = 10, is_video : boolean = false): Promise<number[]> {
   const apiUrl = 'http://127.0.0.1:8000/recommend_posts';
   try {
     console.log('Calling FastAPI with:', { userId, numPosts });
@@ -15,6 +15,7 @@ export class RecommendationService {
       this.httpService.post(apiUrl, {
         user_id: Number(userId),
         num_posts: Number(numPosts),
+        is_video : is_video,
       }),
     );
 
